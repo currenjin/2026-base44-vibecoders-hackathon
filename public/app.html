@@ -857,7 +857,7 @@ const q = new URLSearchParams(location.search);
 if (q.get('url')) setTimeout(() => route(q.get('url')), 50);
 if (hmode === 'v11') { document.getElementById('hReg').setAttribute('aria-pressed', 'false'); document.getElementById('hV11').setAttribute('aria-pressed', 'true'); }
 openListing(q.get('l') || '19929211');
-show(q.get('s') || 'report', cur);
+show(q.get('s') || (q.get('l') ? 'report' : 'idle'), cur);
 if (q.get('season') === 'summer') document.getElementById('bSummer').click();
 if (q.get('t')) { tInput.value = q.get('t'); update(); }
 if (q.get('wall')) document.querySelector(`#wallPick [data-w="${q.get('wall')}"]`)?.click();
