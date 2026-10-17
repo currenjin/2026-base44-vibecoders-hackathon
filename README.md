@@ -5,7 +5,7 @@ Vibe Coders Jam Session: feat. Base44 + Hongik University (2026-10-17) **1등 �
 - 행사: https://luma.com/base44hongdae
 - 참가자: **118명**. 행사 종료 시 공식 Luma 참석자 표시와 참가자의 최종 확인을 기준으로 기록했다. 별도 현장 체크인 집계 자료는 확보하지 않았다.
 - 결과: 대표 프로젝트로 선정되어 최종 발표 후 1등. 참가자 확인에 따른 기록이며 세부 상명·득표수·공식 결과 페이지는 확인하지 않았다.
-- 앱: https://prelook-4f889e57.base44.app
+- 앱: ~~https://prelook-4f889e57.base44.app~~ (link expired: the Base44 demo app is no longer maintained after the event)
 - 저장소: https://github.com/currenjin/2026-base44-vibecoders-hackathon
 
 ## 무엇을 보여 주나
@@ -16,8 +16,8 @@ Vibe Coders Jam Session: feat. Base44 + Hongik University (2026-10-17) **1등 �
 - 다른 피터팬 링크는 실시간 광고 읽기와 표제부 조회 경로를 제공한다. 모든 지역·매물의 성공이나 수치 정확성을 보장하지 않는다.
 
 시연 링크:
-- https://prelook-4f889e57.base44.app/app.html?l=19929211
-- https://prelook-4f889e57.base44.app/app.html?l=19921381
+- ~~https://prelook-4f889e57.base44.app/app.html?l=19929211~~
+- ~~https://prelook-4f889e57.base44.app/app.html?l=19921381~~
 
 ## 계산과 확인 범위
 
