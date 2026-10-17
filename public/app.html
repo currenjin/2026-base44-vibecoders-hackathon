@@ -223,7 +223,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 .assume span{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
 .assume.open span{-webkit-line-clamp:unset}
 .assume{cursor:pointer}
-.readout{display:none}
+.readout{display:flex}.readout span:not(.front){display:none}
+.more-notes{display:none;margin-top:6px}.assume.open .more-notes{display:block}.more-notes p{margin:3px 0;font-size:11.5px}
 .hud-bottom{left:auto!important;right:16px!important;width:min(560px,calc(100% - 490px))}
 .hero .v{font-size:44px}
 .plan-card .planwrap{height:240px}
@@ -288,9 +289,9 @@ details.more summary{cursor:pointer;font-size:13px;color:var(--accent);font-weig
 <main id="s-infra" class="msg hidden">
   <div class="box">
     <span class="tag infra">조회 실패</span>
-    <h2>건축물대장 서버가 응답하지 않았습니다</h2>
-    <p>한 번 다시 시도했지만 응답이 비어 있었습니다. 매물에 공식 기록이 없다는 뜻은 아닙니다. 광고 정보와 주변 계산은 그대로 볼 수 있습니다.</p>
-    <div class="row"><button class="btn" data-go="report">다시 조회</button><button class="btn ghost" data-go="report">공식 정보 없이 보기</button></div>
+    <h2 id="infraTitle">매물 페이지를 읽지 못했습니다</h2>
+    <p id="infraBody">피터팬 페이지가 응답하지 않았거나 빈 응답이었어요. 서버에서 한 번 다시 시도했습니다. 매물이 없다는 뜻은 아닙니다.</p>
+    <div class="row"><button class="btn" id="infraRetry">같은 링크 다시 조회</button><button class="btn ghost" data-go="idle">다른 링크 넣기</button></div>
   </div>
 </main>
 
@@ -620,8 +621,8 @@ function update() {
   winRing.material.color.set(r.lit ? '#E8A317' : '#8A8F93');
   const frac = x => (x - 300) / (1230 - 300) * 100;
   ['trSummer', 'trWinter'].forEach(id => { const b = document.querySelector('#' + id + ' b'); if (!b) return; b.style.left = frac(m) + '%'; b.style.visibility = (id === 'trSummer') === (season === 'summer') ? 'visible' : 'hidden'; });
-  const front = model.atWin ? `창 앞 ${model.atWin.t.toFixed(1)}m 건물이 창 높이를 막음` : model.plan ? `정면 외곽선 ${model.plan.t.toFixed(1)}m · 창 높이에서는 열림(높이 반영 건물 기준)` : '정면에 계산 대상 건물 없음';
-  document.getElementById('readout').innerHTML = `<span class="st ${r.lit ? 'lit' : ''}">${r.why}</span><span class="num">고도 ${s.el.toFixed(1)}° · 방위 ${s.az.toFixed(0)}°</span><span>${front}</span>${win.user ? '<span class="tag warn">사용자 수정 · 기준 밖</span>' : ''}`;
+  const front = model.plan ? `창 앞 평면 거리 ${model.plan.t.toFixed(1)}m · 창 높이에서 막는 벽 ${model.atWin ? model.atWin.t.toFixed(1) + 'm' : '없음(높이 반영 건물 기준)'}` : '정면에 계산 대상 건물 없음';
+  document.getElementById('readout').innerHTML = `<span class="st ${r.lit ? 'lit' : ''}">${r.why}</span><span class="num">고도 ${s.el.toFixed(1)}° · 방위 ${s.az.toFixed(0)}°</span><span class="front">${front}</span>${win.user ? '<span class="tag warn front">사용자 수정 · 기준 밖</span>' : ''}`;
   plan.update(d, r.lit, r.why, win.bearing);
 }
 
@@ -630,7 +631,8 @@ function updateNotice(lid) {
   const nUnk = obs.filter(o => H(o) == null).length, nKnown = obs.length - nUnk;
   const nOsm = obs.filter(o => o.h != null).length, nRegH = obs.filter(o => o.h == null && o.rsrc === 'registry-heit').length, nRegF = obs.filter(o => o.h == null && o.rsrc === 'registry-floors-x3').length;
   const srcN = (k) => obs.filter((o) => String(o.src || '').toUpperCase().includes(k)).length;
-  document.getElementById('notice').innerHTML = `<b>${ui.always_visible_assumption_notice}</b><span>${ui.window_height_notice} · ${ui.height_coverage_notice} · 평지 가정, 나무 제외 · 실제 집의 확정 일조시간이 아님</span>`;
+  const hc = ui.height_source_counts || {}; const hcTxt = Object.entries(hc).map(([k, v]) => ({ REGISTRY_HEIT: '대장 높이', OSM_HEIGHT: 'OSM 높이', REGISTRY_FLOORS_ASSUMED_3M: '대장 층수×3m', OSM_FLOORS_ASSUMED_3M: 'OSM 층수×3m', UNKNOWN: '높이 미상' }[k] || k) + ' ' + v).join(' · ');
+  document.getElementById('notice').innerHTML = `<b>${ui.always_visible_assumption_notice} <u style="font-weight:600">자세히</u></b><span>${ui.window_height_notice} · ${ui.height_coverage_notice}</span><div class="more-notes"><p>${ui.window_xy_notice || ''}</p><p>${ui.window_height_not_roof_notice || ''}</p><p>높이 출처: ${hcTxt}</p><p>${ui.projection_distance_notice || ''}</p><p>${ui.scope_notice || ''}</p><p>외곽선 OSM(© OpenStreetMap contributors) 2026-10-16 · 높이 건축HUB 표제부 2026-10-16 조회</p></div>`;
   document.getElementById('hNote').textContent = hmode === 'reg' ? `OSM 도로명 주소를 건축물대장 표제부와 맞춰 ${nRegH + nRegF}동을 채웠습니다. 주소가 없거나 대장과 맞지 않는 건물은 높이 미상으로 남깁니다.` : 'OSM에 높이가 적힌 건물만 씁니다. 대장 보강과 비교용입니다.';
   document.getElementById('legend').innerHTML = `<span><i style="background:#2F4FE0"></i>이 집</span><span><i style="background:#fff;border:1px solid #A3ACBA"></i>높이 반영<b>${nKnown}</b></span><span><i style="background:#D5DAE2;border:1px dashed #8C96A6"></i>높이 미상<b>${nUnk}</b></span><span><i style="background:#E4E8EE;border:1px solid #CDD3DC"></i>계산 밖(보기용)</span><span class="osm">외곽선 © OpenStreetMap · 높이 OSM·건축HUB</span>`;
 }
@@ -841,7 +843,7 @@ async function liveFlow(url, id) {
   let ad;
   try { ad = await callFn('read-listing', { url }); } catch (e) { ad = { state: 'INFRA_ERROR' }; }
   if (ad.state === 'UNSUPPORTED') { document.getElementById('badUrl').textContent = url; return show('unsupported'); }
-  if (ad.state !== 'OK') { return show('infra'); }
+  if (ad.state !== 'OK') { window.__lastUrl = url; return show('infra'); }
   setStep(0, 'done', '피터팬 · ' + ((performance.now() - t0) / 1000).toFixed(1) + '초');
   setStep(1, 'run'); const t1 = performance.now();
   let reg;
@@ -858,7 +860,8 @@ async function liveFlow(url, id) {
 function renderLive(ad, reg, url) {
   const f = ad.fields || {}, R = reg.state === 'OK' ? reg.record : null;
   const unk = (why) => '<span class="tag unk">확인 불가</span><span class="src">' + esc(why) + '</span>';
-  const fail = reg.state === 'INFRA_ERROR' ? '<span class="tag infra">조회 실패</span><span class="src">' + esc(reg.reason || '') + ' · 공식 기록이 없다는 뜻이 아님</span>' : null;
+  const fail = reg.state === 'INFRA_ERROR' ? '<span class="tag infra">조회 실패</span><span class="src">건축물대장 · ' + esc(reg.reason || '') + ' · 공식 기록이 없다는 뜻이 아님</span>' : null;
+  window.__lastUrl = url;
   const off = (v) => R ? v : (fail || unk(reg.reason || '대장 조회 결과 없음'));
   const ymd = (d) => d && d.length === 8 ? d.slice(0, 4) + '.' + d.slice(4, 6) + '.' + d.slice(6) : (d || '');
   const dir = (f['주실기준/방향'] || '').replace(/^.*\//, '');
@@ -893,7 +896,7 @@ function renderLive(ad, reg, url) {
     </div>
     <div class="card"><h3><span class="idx">01</span>광고와 공식 기록</h3>
       <div class="facts"><div class="hd"><div></div><div>매물 광고</div><div>건축물대장</div></div>${factsHTML(rows)}</div>
-      <div class="foot">피터팬 ${esc((ad.retrieved_at || '').slice(0, 16).replace('T', ' '))} UTC 조회 · 건축HUB 표제부 ${R ? esc((reg.retrieved_at || '').slice(0, 16).replace('T', ' ')) + ' UTC 조회' : esc(reg.state)}. 출처별 기록이며 적법·안전 여부를 판정하지 않습니다.</div></div>
+      ${reg.state === 'INFRA_ERROR' ? '<div class="row" style="margin:10px 0 0"><button class="btn ghost" onclick="route(window.__lastUrl)">건축물대장 다시 조회</button></div>' : ''}<div class="foot">피터팬 ${esc((ad.retrieved_at || '').slice(0, 16).replace('T', ' '))} UTC 조회 · 건축HUB 표제부 ${R ? esc((reg.retrieved_at || '').slice(0, 16).replace('T', ' ')) + ' UTC 조회' : esc(reg.state)}. 출처별 기록이며 적법·안전 여부를 판정하지 않습니다.</div></div>
     <div class="card"><h3><span class="idx">02</span>방문해서 확인할 것</h3><ul class="check">${check.map(([a, b]) => `<li><i></i><div>${esc(a)}<small>${esc(b)}</small></div></li>`).join('')}</ul></div>
     <div class="foot">Prelook은 매물 추천이나 법적 판정을 하지 않습니다. 숫자는 공개 페이지·공공데이터에서 가져온 그대로입니다.</div>`;
 }
@@ -905,6 +908,7 @@ function route(url) {
   document.getElementById('loadUrl').textContent = `peterpanz.com/house/${lid}`;
   show('loading'); timers.push(setTimeout(() => show('report', lid), 3700));
 }
+document.getElementById('infraRetry').onclick = () => { if (window.__lastUrl) route(window.__lastUrl); else show('idle'); };
 document.querySelectorAll('[data-demo]').forEach(b => b.onclick = () => { document.getElementById('stage').classList.remove('live'); route('https://www.peterpanz.com/house/' + b.dataset.demo); });
 document.getElementById('idleForm').onsubmit = e => { e.preventDefault(); route(document.getElementById('idleUrl').value); };
 document.getElementById('topForm').onsubmit = e => { e.preventDefault(); route(document.getElementById('topUrl').value); };
