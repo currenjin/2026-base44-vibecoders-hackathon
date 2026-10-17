@@ -200,6 +200,10 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   .review{top:auto;bottom:8px;max-width:calc(100vw - 16px);flex-wrap:wrap}
   .review b{display:none}
 }
+.live-note{display:none;position:absolute;inset:0;z-index:6;place-items:center;text-align:center;padding:24px}
+.live-note>div{max-width:520px;background:rgba(255,255,255,.92);border-radius:20px;padding:24px;box-shadow:0 12px 40px rgba(15,22,35,.12)}
+.live-note b{display:block;font-size:20px;margin-bottom:8px}.live-note span{color:#5B6475;font-size:15px}
+.stage.live .live-note{display:grid}.stage.live canvas,.stage.live .hud{display:none!important}
 </style>
 <script src="listings-geo.js"></script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
@@ -262,6 +266,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 <main id="s-report" class="report hidden">
   <section class="side" id="side"></section>
   <section class="stage" id="stage">
+    <div class="live-note" id="liveNote"><div><b>3D 햇빛 모델은 시연 매물 2건만 준비돼 있어요</b><span>이 매물은 광고와 건축물대장 대조, 방문 체크리스트까지 실시간으로 만들었어요. 주변 건물 높이와 창 위치 가정이 고정된 매물만 햇빛 시간표를 계산해요.</span><div class="row" style="margin-top:14px;justify-content:center"><button class="btn" data-demo="19929211">시연: 남향 2층</button><button class="btn ghost" data-demo="19921381">시연: 근생 4층</button></div></div></div>
     <canvas id="city"></canvas>
     <div class="hud hud-right">
       <div class="grp"><div class="lbl">계절</div><div class="seg" role="group" aria-label="계절"><button id="bSummer" aria-pressed="false">하지 6/21</button><button id="bWinter" aria-pressed="true">동지 12/22</button></div></div>
@@ -710,6 +715,7 @@ const plan = (() => {
 // ---------- 매물 열기 ----------
 const tInput = document.getElementById('t');
 function openListing(lid) {
+  document.getElementById('stage').classList.remove('live');
   cur = lid; renderSide(lid); buildWorld(lid);
   document.getElementById('topUrl').value = `https://www.peterpanz.com/house/${lid}`;
   const { opts, mismatch, walls } = windowOptions(lid), box = document.getElementById('wallPick');
@@ -760,14 +766,87 @@ function runLoading() {
   lis.forEach(li => { li.className = 'wait'; li.querySelector('small').textContent = ''; });
   lis.forEach((li, i) => { timers.push(setTimeout(() => { li.className = 'run'; }, i*900)); timers.push(setTimeout(() => { li.className = 'done'; li.querySelector('small').textContent = notes[i]; }, i*900 + 850)); });
 }
+function setStep(i, cls, note) { const li = document.querySelectorAll('#steps li')[i]; if (!li) return; li.className = cls; if (note != null) li.querySelector('small').textContent = note; }
+async function callFn(name, body) {
+  const r = await fetch('/functions/' + name, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+const esc = (x) => String(x == null ? '' : x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+async function liveFlow(url, id) {
+  document.getElementById('loadUrl').textContent = 'peterpanz.com/house/' + id;
+  timers.forEach(clearTimeout); timers = [];
+  screens.forEach(k => document.getElementById('s-' + k).classList.toggle('hidden', k !== 'loading'));
+  document.getElementById('topForm').classList.add('hidden');
+  [0, 1, 2, 3].forEach((i) => setStep(i, 'wait', ''));
+  setStep(0, 'run'); const t0 = performance.now();
+  let ad;
+  try { ad = await callFn('read-listing', { url }); } catch (e) { ad = { state: 'INFRA_ERROR' }; }
+  if (ad.state === 'UNSUPPORTED') { document.getElementById('badUrl').textContent = url; return show('unsupported'); }
+  if (ad.state !== 'OK') { return show('infra'); }
+  setStep(0, 'done', '피터팬 · ' + ((performance.now() - t0) / 1000).toFixed(1) + '초');
+  setStep(1, 'run'); const t1 = performance.now();
+  let reg;
+  try { reg = await callFn('building-register', { jibun_address: ad.jibun_address }); } catch (e) { reg = { state: 'INFRA_ERROR', reason: '조회 실패' }; }
+  setStep(1, 'done', reg.state === 'OK' ? '건축HUB 표제부 · ' + ((performance.now() - t1) / 1000).toFixed(1) + '초' : '건축HUB · ' + (reg.state === 'INFRA_ERROR' ? '조회 실패' : '확인 불가'));
+  setStep(2, 'done', '3D는 시연 매물만'); setStep(3, 'done', '');
+  renderLive(ad, reg, url);
+  cur = 'live-' + id;
+  screens.forEach(k => document.getElementById('s-' + k).classList.toggle('hidden', k !== 'report'));
+  document.getElementById('topForm').classList.remove('hidden');
+  document.getElementById('topUrl').value = url;
+  document.getElementById('stage').classList.add('live');
+}
+function renderLive(ad, reg, url) {
+  const f = ad.fields || {}, R = reg.state === 'OK' ? reg.record : null;
+  const unk = (why) => '<span class="tag unk">확인 불가</span><span class="src">' + esc(why) + '</span>';
+  const fail = reg.state === 'INFRA_ERROR' ? '<span class="tag infra">조회 실패</span><span class="src">' + esc(reg.reason || '') + ' · 공식 기록이 없다는 뜻이 아님</span>' : null;
+  const off = (v) => R ? v : (fail || unk(reg.reason || '대장 조회 결과 없음'));
+  const ymd = (d) => d && d.length === 8 ? d.slice(0, 4) + '.' + d.slice(4, 6) + '.' + d.slice(6) : (d || '');
+  const dir = (f['주실기준/방향'] || '').replace(/^.*\//, '');
+  const vio = f['위반건축물 여부'];
+  const rows = [
+    ['전용면적', esc(f['전용/공급면적'] || '표기 없음') + '<span class="src">피터팬 표기</span>', unk('해당 호를 특정하지 않음(표제부만 조회)')],
+    ['층', esc(f['해당층/전체층'] || '표기 없음'), off(R && ('지상 ' + esc(R.grndFlrCnt) + '층 · 지하 ' + esc(R.ugrndFlrCnt) + '층<span class="src">표제부 · 높이 ' + esc(R.heit) + 'm</span>'))],
+    ['용도', esc(f['건축물용도'] || '표기 없음'), off(R && (esc(R.mainPurpsCdNm) + (R.etcPurps ? '<span class="src">기타 용도: ' + esc(R.etcPurps) + '</span>' : '')))],
+    ['준공', esc(f['사용승인일'] || '표기 없음'), off(R && (esc(ymd(R.useAprDay)) + '<span class="src">사용승인일</span>'))],
+    ['구조', '표기 없음', off(R && esc(R.strctCdNm))],
+    ['위반건축물', vio === '-' || !vio ? '표기 없음 <span class="tag ad">"' + esc(vio || '-') + '"</span><span class="src">"-"는 "아님"이 아님</span>' : '"' + esc(vio) + '"<span class="src">광고 표기. 공식 확인이 아님</span>', unk('조회 API에 항목 없음')],
+  ];
+  const use = R ? R.mainPurpsCdNm : (f['건축물용도'] || '');
+  const check = [];
+  if (/근린생활/.test(use)) check.push(['근린생활시설 건물이라 전입신고·주거용 사용 가능 여부 묻기', '근거: ' + (R ? '건축물대장 주용도' : '광고 건축물용도')]);
+  if (/업무/.test(use)) check.push(['업무시설 건물이라 전입신고·주거용 사용 가능 여부 묻기', '근거: 건축물 용도']);
+  if (vio && vio !== '-' && !/아님/.test(vio)) check.push(['광고의 "위반건축물" 표기가 무엇인지 묻고 대장 원본 확인하기', '근거: 피터팬 표기 · API로는 확인 불가']);
+  if (/북/.test(dir)) check.push(['북향 계열(' + dir + ')이라 낮에 실내 밝기 직접 보기', '근거: 광고 방향']);
+  if (ad.floor_text && ad.total_floors && ad.floor_text === ad.total_floors + '층') check.push(['꼭대기층이라 여름 더위와 누수 흔적 확인하기', '근거: 광고 ' + ad.floor_text + '/' + ad.total_floors + '층']);
+  if (/반지/.test(ad.floor_text || '')) check.push(['반지층이라 습기·환기·채광 확인하기', '근거: 광고 층 표기']);
+  if (f['관리비']) check.push(['관리비 포함 항목 받아 두기', '근거: 피터팬 "' + esc(f['관리비']).slice(0, 40) + '"']);
+  check.push(['계약 전 해당 호의 면적을 서류로 확인하기', '근거: 공식 전용면적 확인 불가'], ['등기부등본으로 근저당·압류 확인하기', '자동으로 확인할 수 없는 항목'], ['수압, 곰팡이, 방음 확인하기', '방문해야만 알 수 있는 항목']);
+  const title = (ad.road_address || ad.jibun_address || '피터팬 ' + ad.id).replace(/^서울특별시\s*/, '') + (ad.floor_text ? ', ' + ad.floor_text : '');
+  const meta = [(ad.jibun_address || '').replace(/^서울특별시\s*/, '').replace(/\s[\d-]+$/, ''), f['건물형태'], ad.exclusive_area_m2 ? '광고 ' + ad.exclusive_area_m2 + '㎡' : null, dir, f['사용승인일'] ? f['사용승인일'].slice(0, 4) + '년 승인' : null].filter(Boolean);
+  document.getElementById('side').innerHTML = `
+    <div class="head"><div class="eyebrow">피터팬 <span class="mono">${esc(ad.id)}</span> · 실시간 조회</div><h2>${esc(title)}</h2>
+      <div class="meta">${meta.map(m => '<span>' + esc(m) + '</span>').join('')}</div></div>
+    <div class="tiles" style="margin-top:18px">
+      <div class="tile unk"><div class="k">공식 전용면적</div><div class="v">확인 불가</div></div>
+      <div class="tile ${/근린|업무/.test(use) ? 'warn' : ''}"><div class="k">건축물 용도</div><div class="v">${esc(use || '확인 불가')}</div></div>
+    </div>
+    <div class="card"><h3><span class="idx">01</span>광고와 공식 기록</h3>
+      <div class="facts"><div class="hd"><div></div><div>매물 광고</div><div>건축물대장</div></div>${rows.map(r => `<div class="r"><div>${r[0]}</div><div class="num">${r[1]}</div><div class="num">${r[2]}</div></div>`).join('')}</div>
+      <div class="foot">피터팬 ${esc((ad.retrieved_at || '').slice(0, 16).replace('T', ' '))} UTC 조회 · 건축HUB 표제부 ${R ? esc((reg.retrieved_at || '').slice(0, 16).replace('T', ' ')) + ' UTC 조회' : esc(reg.state)}. 출처별 기록이며 적법·안전 여부를 판정하지 않습니다.</div></div>
+    <div class="card"><h3><span class="idx">02</span>방문해서 확인할 것</h3><ul class="check">${check.map(([a, b]) => `<li><i></i><div>${esc(a)}<small>${esc(b)}</small></div></li>`).join('')}</ul></div>
+    <div class="foot">Prelook은 매물 추천이나 법적 판정을 하지 않습니다. 숫자는 공개 페이지·공공데이터에서 가져온 그대로입니다.</div>`;
+}
 function route(url) {
   const m = url.trim().match(/^https:\/\/(www\.)?peterpanz\.com\/house\/(\d+)/);
   if (!m) { document.getElementById('badUrl').textContent = url.trim() || '(빈 입력)'; return show('unsupported'); }
   const lid = LISTINGS[m[2]] ? m[2] : null;
-  if (!lid) { document.getElementById('badUrl').textContent = `${url.trim()} (이 시안에는 시연 매물 2개만 있습니다)`; return show('unsupported'); }
+  if (!lid) return liveFlow(url.trim(), m[2]);
   document.getElementById('loadUrl').textContent = `peterpanz.com/house/${lid}`;
   show('loading'); timers.push(setTimeout(() => show('report', lid), 3700));
 }
+document.querySelectorAll('[data-demo]').forEach(b => b.onclick = () => { document.getElementById('stage').classList.remove('live'); route('https://www.peterpanz.com/house/' + b.dataset.demo); });
 document.getElementById('idleForm').onsubmit = e => { e.preventDefault(); route(document.getElementById('idleUrl').value); };
 document.getElementById('topForm').onsubmit = e => { e.preventDefault(); route(document.getElementById('topUrl').value); };
 document.querySelectorAll('.chip').forEach(c => c.onclick = () => { document.getElementById('idleUrl').value = c.dataset.url; route(c.dataset.url); });
@@ -775,6 +854,7 @@ document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => show(b.dat
 document.querySelectorAll('.review [data-s]').forEach(b => b.onclick = () => show(b.dataset.s, b.dataset.l || cur));
 
 const q = new URLSearchParams(location.search);
+if (q.get('url')) setTimeout(() => route(q.get('url')), 50);
 if (hmode === 'v11') { document.getElementById('hReg').setAttribute('aria-pressed', 'false'); document.getElementById('hV11').setAttribute('aria-pressed', 'true'); }
 openListing(q.get('l') || '19929211');
 show(q.get('s') || 'report', cur);
