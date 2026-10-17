@@ -212,6 +212,29 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 .mk{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:700;border-radius:5px;padding:2px 5px;vertical-align:1px}
 .mk.same{background:#E6F4EC;color:#157F4B}.mk.diff{background:#FFF1DE;color:#9A5B00}.mk.unk{background:#EEF0F3;color:#5F6878}.mk.only{background:#EEF2FF;color:#2F4FE0}
 .facts .r.diff{background:#FFF8EC;margin:0 -8px;padding-left:8px;padding-right:8px;border-radius:8px}
+
+/* ---- focus mode ---- */
+.hud-right{display:none}
+.hud-right.open{display:block}
+.hb-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.seg.sm{width:auto}.seg.sm button{padding:6px 14px}
+.mini{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 10px;font-size:12.5px;font-weight:600;color:var(--ink-2);cursor:pointer}
+.assume{font-size:12px;padding:6px 10px;margin-bottom:10px}
+.assume span{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.assume.open span{-webkit-line-clamp:unset}
+.assume{cursor:pointer}
+.readout{display:none}
+.hud-bottom{left:auto!important;right:16px!important;width:min(560px,calc(100% - 490px))}
+.hero .v{font-size:44px}
+.plan-card .planwrap{height:240px}
+details.fold{padding:0}details.fold>summary{list-style:none;cursor:pointer;padding:16px;display:flex;flex-direction:column;gap:3px}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold>summary b{font-size:15px}details.fold>summary b::after{content:" ▾";color:var(--ink-3);font-weight:500}
+details.fold[open]>summary b::after{content:" ▴"}
+details.fold .sum{font-size:13px;color:var(--ink-2)}
+details.fold>.facts,details.fold>.poi,details.fold>.foot{margin:0 16px}details.fold>.foot{padding-bottom:14px}
+details.more summary{cursor:pointer;font-size:13px;color:var(--accent);font-weight:600;margin-top:8px}
+@media (max-width:900px){.hud-bottom{width:auto}}
 </style>
 <script src="listings-geo.js"></script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
@@ -276,13 +299,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
   <section class="stage" id="stage">
     <div class="live-note" id="liveNote"><div><b>3D 햇빛 모델은 시연 매물 2건만 준비돼 있어요</b><span>이 매물은 광고와 건축물대장 대조, 방문 체크리스트까지 실시간으로 만들었어요. 주변 건물 높이와 창 위치 가정이 고정된 매물만 햇빛 시간표를 계산해요.</span><div class="row" style="margin-top:14px;justify-content:center"><button class="btn" data-demo="19929211">시연: 남향 2층</button><button class="btn ghost" data-demo="19921381">시연: 근생 4층</button></div></div></div>
     <canvas id="city"></canvas>
-    <div class="hud hud-right">
+    <div class="hud hud-right" id="hudRight">
       <div class="grp"><div class="lbl">계절</div><div class="seg" role="group" aria-label="계절"><button id="bSummer" aria-pressed="false">하지 6/21</button><button id="bWinter" aria-pressed="true">동지 12/22</button></div></div>
       <div class="grp"><div class="lbl">창 위치</div><div class="seg vert" id="wallPick" role="group" aria-label="창 위치"></div><div class="wall-note" id="wallNote"></div></div>
       <div class="grp" style="display:none"><div class="lbl">건물 높이</div><div class="seg" role="group" aria-label="건물 높이"><button id="hReg" aria-pressed="true">대장 보강</button><button id="hV11" aria-pressed="false">OSM 높이만</button></div><div class="wall-note" id="hNote"></div></div>
       <div class="grp"><div class="lbl">범례</div><div class="legend" id="legend"></div></div>
     </div>
     <div class="hud hud-bottom">
+      <div class="hb-top"><div class="seg sm" role="group" aria-label="계절"><button id="bSummer2">여름</button><button id="bWinter2" aria-pressed="true">겨울</button></div><button class="mini" id="hudToggle">창 위치·범례</button></div>
       <div class="assume" id="notice"></div>
       <div class="timebar"><button class="play" id="play" aria-label="재생"><svg viewBox="0 0 14 14"><path d="M3 1.5v11l9-5.5z" fill="currentColor"/></svg></button><div class="clock num" id="clock">12:00</div><input type="range" id="t" min="300" max="1230" step="1" value="720" aria-label="시각"></div>
       <div class="tl-rows">
@@ -565,7 +589,7 @@ function placeWindow(o) {
   { const L = LISTINGS[cur]; const g = document.getElementById('glanceBox'); if (g && L) g.innerHTML = glanceHTML(L.rows, '동지 창 햇빛 ' + (wt ? dur(wt) : '없음') + ' · 하지 ' + (model.iv.summer.reduce((a, [x, y]) => a + y - x, 0) ? dur(model.iv.summer.reduce((a, [x, y]) => a + y - x, 0)) : '없음') + (o.user ? ' (사용자 수정)' : ' (가정 모델)'), L.check.length); }
   const ivText = iv => iv.length ? iv.map(([a, b]) => `${hhmm(a)}–${hhmm(b)}`).join(', ') : '해가 들지 않음';
   document.getElementById('heroIv').innerHTML = `동지 <b class="num">${ivText(model.iv.winter)}</b> · 하지 <span class="num">${ivText(model.iv.summer)}</span>`;
-  for (const [k, id] of [['summer', 'hbS'], ['winter', 'hbW']]) document.getElementById(id).innerHTML = model.iv[k].map(([a, b]) => `<span style="left:${a/14.4}%;width:${(b - a)/14.4}%"></span>`).join('');
+  for (const [k, id] of [['summer', 'hbS'], ['winter', 'hbW']]) { const e = document.getElementById(id); if (e) e.innerHTML = model.iv[k].map(([a, b]) => `<span style="left:${a/14.4}%;width:${(b - a)/14.4}%"></span>`).join(''); }
   document.getElementById('sigTag').textContent = o.user ? '사용자 수정' : '가정 모델';
   document.getElementById('sigTag').className = 'tag ' + (o.user ? 'warn' : 'ex');
   window.__iv = model.iv; window.__front = { plan: model.plan && model.plan.t, atWin: model.atWin && model.atWin.t };
@@ -643,32 +667,29 @@ function glanceHTML(rows, sunText, checks) {
 // ---------- 리포트 ----------
 function renderSide(lid) {
   const L = LISTINGS[lid], G = GEO[lid].model;
+  const n = { same: 0, diff: 0, unk: 0, only: 0 }; L.rows.forEach((r) => n[classify(r)]++);
+  const use = L.rows.find((r) => r[0] === '용도');
+  const top = L.check.slice(0, 3), rest = L.check.slice(3);
   document.getElementById('side').innerHTML = `
     <div class="head"><div class="eyebrow">피터팬 <span class="mono">${lid}</span></div><h2>${L.title}</h2>
       <div class="meta">${L.meta.map(m => `<span>${m}</span>`).join('')}</div></div>
     <div class="hero">
-      <div class="k">동지 창 햇빛 <span class="tag ex" id="sigTag">가정 모델</span></div>
+      <div class="k">겨울(동지) 창 햇빛 <span class="tag ex" id="sigTag">가정 모델</span></div>
       <div class="v num" id="sigWinter">—</div>
       <div class="s" id="heroIv"></div>
-      <div class="bars"><div class="bar">하지<div id="hbS"></div></div><div class="bar">동지<div id="hbW"></div></div></div>
     </div>
-    <div id="glanceBox"></div>
-    <div class="tiles">
-      <div class="tile ${L.tile1[2]}"><div class="k">${L.tile1[0]}</div><div class="v">${L.tile1[1]}</div></div>
-      <div class="tile ${L.sig3[2]}"><div class="k">${L.sig3[0]}</div><div class="v">${L.sig3[1]}</div></div>
-    </div>
-    <div class="card"><h3><span class="idx">01</span>광고와 공식 기록</h3>
+    <div class="card plan-card"><h3>방 안 햇빛 <span class="tag ex">예시 배치</span></h3>
+      <div class="planwrap"><canvas id="plan"></canvas><div class="msgline" id="planMsg">—</div></div>
+      <div class="foot">평면도가 없어 원룸 기본 배치예요(실제 구조·크기 아님). 아래 시간 막대를 움직이면 바닥의 햇빛이 같이 움직여요.</div></div>
+    <div class="card"><h3>가서 꼭 물어볼 것</h3><ul class="check">${top.map(([a, b]) => `<li><i></i><div>${a}<small>${b}</small></div></li>`).join('')}</ul>
+      ${rest.length ? `<details class="more"><summary>${rest.length}개 더 보기</summary><ul class="check">${rest.map(([a, b]) => `<li><i></i><div>${a}<small>${b}</small></div></li>`).join('')}</ul></details>` : ''}</div>
+    <details class="card fold"><summary><b>광고와 건축물대장</b><span class="sum">같음 ${n.same} · 다름 ${n.diff} · 확인 불가 ${n.unk}${use ? ' · 대장 용도 ' + plain(use[2]).slice(0, 12) : ''}</span></summary>
       <div class="facts"><div class="hd"><div></div><div>매물 광고</div><div>건축물대장</div></div>${factsHTML(L.rows)}</div>
-      <div class="foot">피터팬·건축HUB 표제부 2026-10-16 조회. 출처별 기록이며 적법·안전 여부를 판정하지 않습니다.</div></div>
-    <div class="card"><h3><span class="idx">02</span>걸어서 닿는 곳 <span class="tag unk">언덕 확인 불가</span></h3>
+      <div class="foot">피터팬·건축HUB 표제부 2026-10-16 조회. 출처별 기록이며 적법·안전 여부를 판정하지 않습니다.</div></details>
+    <details class="card fold"><summary><b>걸어서 닿는 곳</b><span class="sum">${L.pois.map(([, name, d]) => name.replace(' 출입구', '').replace(' 정류장', '') + ' ' + d + 'm').join(' · ')}</span></summary>
       <div class="poi">${L.pois.map(([ic, name, d, c]) => `<div><span class="ic" style="background:${c}">${ic}</span>${name}<span class="d num">${d}m</span></div>`).join('')}</div>
-      <div class="foot">OpenStreetMap 등록 지점까지의 직선거리입니다. 도보 거리와 경사는 다릅니다.</div></div>
-    <div class="card"><h3><span class="idx">03</span>방 안 햇빛 <span class="tag ex">예시 배치</span></h3>
-      <div class="planwrap"><canvas id="plan"></canvas><div class="note"><span class="tag ex">예시 배치, 실제 구조 아님</span><span class="tag unk">크기 미확정</span></div><div class="msgline" id="planMsg">—</div></div>
-      <div class="row" style="margin-top:10px"><button class="btn ghost">평면도 사진 올리기</button></div>
-      <div class="foot">매물에 평면도가 없어 원룸 기본 배치로 보여 줍니다. 창 방향은 오른쪽 창 위치를 따릅니다.</div></div>
-    <div class="card"><h3><span class="idx">04</span>방문해서 확인할 것</h3><ul class="check">${L.check.map(([a, b]) => `<li><i></i><div>${a}<small>${b}</small></div></li>`).join('')}</ul></div>
-    <div class="foot">Prelook은 매물 추천이나 법적 판정을 하지 않습니다. 숫자는 공공데이터와 계산에서 나오고, AI는 문장만 씁니다.</div>`;
+      <div class="foot">OpenStreetMap 등록 지점까지의 직선거리예요. 도보 거리와 경사(언덕)는 확인하지 못했어요.</div></details>
+    <div class="foot">Prelook은 매물 추천이나 법적 판정을 하지 않습니다. 숫자는 공공데이터와 계산에서 나옵니다.</div>`;
   updateNotice(lid);
   plan.mount();
 }
@@ -760,6 +781,10 @@ function openListing(lid) {
 document.getElementById('bSummer').onclick = () => { season = 'summer'; document.getElementById('bSummer').setAttribute('aria-pressed', 'true'); document.getElementById('bWinter').setAttribute('aria-pressed', 'false'); update(); };
 document.getElementById('bWinter').onclick = () => { season = 'winter'; document.getElementById('bWinter').setAttribute('aria-pressed', 'true'); document.getElementById('bSummer').setAttribute('aria-pressed', 'false'); update(); };
 tInput.oninput = update;
+document.getElementById('bSummer2').onclick = () => { document.getElementById('bSummer').click(); document.getElementById('bSummer2').setAttribute('aria-pressed','true'); document.getElementById('bWinter2').setAttribute('aria-pressed','false'); };
+document.getElementById('bWinter2').onclick = () => { document.getElementById('bWinter').click(); document.getElementById('bWinter2').setAttribute('aria-pressed','true'); document.getElementById('bSummer2').setAttribute('aria-pressed','false'); };
+document.getElementById('hudToggle').onclick = () => document.getElementById('hudRight').classList.toggle('open');
+document.getElementById('notice').onclick = () => document.getElementById('notice').classList.toggle('open');
 document.getElementById('hReg').onclick = () => setHeightMode('reg');
 document.getElementById('hV11').onclick = () => setHeightMode('v11');
 let playing = null;
@@ -767,7 +792,7 @@ document.getElementById('play').onclick = () => {
   const btn = document.getElementById('play');
   if (playing) { clearInterval(playing); playing = null; btn.innerHTML = '<svg viewBox="0 0 14 14"><path d="M3 1.5v11l9-5.5z" fill="currentColor"/></svg>'; return; }
   btn.innerHTML = '<svg viewBox="0 0 14 14"><path d="M3 2h3v10H3zM8 2h3v10H8z" fill="currentColor"/></svg>';
-  playing = setInterval(() => { let v = +tInput.value + 4; if (v > 1230) v = 300; tInput.value = v; update(); }, 40);
+  playing = setInterval(() => { let v = +tInput.value + 3; if (v > 1110 || v < 390) v = 390; tInput.value = v; update(); }, 40);
 };
 
 let composer = null;
@@ -779,7 +804,7 @@ if (matchMedia('(min-width: 901px)').matches) {
     { const r0 = ao.render.bind(ao); ao.render = (...args) => { const hid = []; scene.traverse(o => { if (o.visible && (o.isSprite || (o.material && o.material.transparent))) { o.visible = false; hid.push(o); } }); r0(...args); hid.forEach(o => { o.visible = true; }); }; } composer.addPass(new OutputPass());
   } catch (e) { console.warn('AO off', e); composer = null; }
 }
-function resize() { const w = canvas.clientWidth, h = canvas.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); composer?.setSize(w, h); camera.aspect = w/h; if (w > 900) camera.setViewOffset(w, h, w > 1180 ? -100 : -210, -60, w, h); else camera.clearViewOffset(); camera.updateProjectionMatrix(); }
+function resize() { const w = canvas.clientWidth, h = canvas.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); composer?.setSize(w, h); camera.aspect = w/h; if (w > 900) camera.setViewOffset(w, h, w > 1180 ? -60 : -170, 70, w, h); else camera.clearViewOffset(); camera.updateProjectionMatrix(); }
 new ResizeObserver(resize).observe(canvas);
 (function loop() { controls.update(); composer ? composer.render() : renderer.render(scene, camera); requestAnimationFrame(loop); })();
 
@@ -896,6 +921,11 @@ if (q.get('season') === 'summer') document.getElementById('bSummer').click();
 if (q.get('t')) { tInput.value = q.get('t'); update(); }
 if (q.get('wall')) document.querySelector(`#wallPick [data-w="${q.get('wall')}"]`)?.click();
 window.__ready = true;
+// 기본으로 해를 재생한다. 사용자가 슬라이더를 만지면 멈춘다. 검증용 ?t= 또는 ?still=1이면 재생하지 않는다.
+if (!q.get('t') && !q.get('still') && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  setTimeout(() => { if (!playing) document.getElementById('play').click(); }, 1200);
+}
+tInput.addEventListener('pointerdown', () => { if (playing) document.getElementById('play').click(); });
 </script>
 </body>
 </html>
