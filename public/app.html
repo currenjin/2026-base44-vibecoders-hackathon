@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Prelook · 집보기 전 리포트</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+:root{
+  --bg:#F1F3F7; --surface:#FFFFFF; --surface-2:#F7F8FA; --ink:#0F1623; --ink-2:#5B6475; --ink-3:#8A93A3; --line:#E4E8EE; --line-2:#EEF1F5;
+  --accent:#2F4FE0; --accent-soft:#EAEEFF; --sun:#F0A400; --sun-soft:#FFF4D6;
+  --warn:#9A5B00; --warn-soft:#FFF1DE; --unk:#5F6878; --unk-soft:#EEF0F3; --infra:#2F5C8F; --infra-soft:#E6EEF8; --err:#B42318; --err-soft:#FDECEA; --ok:#157F4B;
+  --r-sm:8px; --r-md:12px; --r-lg:16px; --r-xl:20px;
+  --sh-1:0 1px 2px rgba(15,22,35,.05); --sh-2:0 6px 24px rgba(15,22,35,.08); --sh-3:0 12px 40px rgba(15,22,35,.12);
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Pretendard,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;word-break:keep-all}
+button,input{font:inherit;color:inherit}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--mono)}
+.hidden{display:none!important}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* 상단 */
+.top{position:sticky;top:0;z-index:30;height:60px;display:flex;align-items:center;gap:20px;padding:0 20px;background:rgba(255,255,255,.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:18px;letter-spacing:-.01em}
+.logo i{width:20px;height:20px;border-radius:6px;background:linear-gradient(135deg,#6E85FF,var(--accent));box-shadow:inset 0 -6px 0 rgba(255,255,255,.18)}
+.urlbar{flex:1;display:flex;gap:8px;max-width:560px}
+.urlbar input{flex:1;min-width:0;height:38px;padding:0 12px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--surface-2);font-size:14px;color:var(--ink-2)}
+.btn{height:38px;padding:0 16px;border:0;border-radius:var(--r-sm);background:var(--accent);color:#fff;font-weight:600;font-size:14px;cursor:pointer;white-space:nowrap}
+.btn.ghost{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+.btn.lg{height:52px;padding:0 22px;font-size:16px;border-radius:var(--r-md)}
+
+/* 입력 전 */
+.landing{max-width:860px;margin:0 auto;padding:104px 24px 48px;text-align:center}
+.landing .kicker{display:inline-block;font-size:13px;font-weight:600;color:var(--accent);background:var(--accent-soft);border-radius:999px;padding:4px 12px;margin-bottom:20px}
+.landing h1{font-size:44px;line-height:1.2;letter-spacing:-.03em;font-weight:700;margin:0 0 14px}
+.landing p.lead{font-size:18px;color:var(--ink-2);margin:0 0 36px}
+.bigurl{display:flex;gap:8px;max-width:640px;margin:0 auto 12px;padding:6px;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh-2)}
+.bigurl input{flex:1;min-width:0;height:52px;padding:0 14px;font-size:16px;border:0;background:transparent}
+.bigurl input:focus-visible{outline:none}
+.hint{font-size:13px;color:var(--ink-3)}
+.chips{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:20px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;font-size:14px;cursor:pointer;color:var(--ink-2)}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.promise{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:64px;text-align:left}
+.promise div{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:16px}
+.promise .n{font-family:var(--mono);font-size:12px;color:var(--accent)}
+.promise b{display:block;font-size:15px;font-weight:600;margin:6px 0 2px}
+.promise span{font-size:13px;color:var(--ink-2)}
+
+/* 처리 중 */
+.loading{max-width:520px;margin:0 auto;padding:120px 24px}
+.loading h2{font-size:24px;font-weight:700;letter-spacing:-.02em;margin:6px 0 4px}
+.eyebrow{font-size:13px;font-weight:600;color:var(--accent)}
+.steps{list-style:none;margin:28px 0 0;padding:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-1)}
+.steps li{display:flex;align-items:center;gap:12px;padding:14px 16px;font-size:15px}
+.steps li+li{border-top:1px solid var(--line-2)}
+.steps li .dot{width:20px;height:20px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:12px;font-weight:700;border:2px solid var(--line);color:transparent}
+.steps li.done .dot{background:var(--ok);border-color:var(--ok);color:#fff}
+.steps li.run .dot{border-color:var(--accent);border-top-color:transparent;animation:spin .9s linear infinite}
+.steps li.wait{color:var(--ink-3)}
+.steps li small{margin-left:auto;color:var(--ink-3);font-size:13px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* 메시지 */
+.msg{max-width:560px;margin:0 auto;padding:120px 24px}
+.msg .box{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-xl);padding:28px;box-shadow:var(--sh-2)}
+.msg h2{font-size:22px;font-weight:700;margin:14px 0 8px;letter-spacing:-.02em}
+.msg p{color:var(--ink-2);margin:0 0 20px}
+.msg code{font-family:var(--mono);font-size:13px;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:2px 6px;word-break:break-all}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+
+/* 배지 */
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;line-height:1;border-radius:6px;padding:4px 7px;white-space:nowrap;vertical-align:middle}
+.tag::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.tag.unk{background:var(--unk-soft);color:var(--unk)}
+.tag.warn{background:var(--warn-soft);color:var(--warn)}
+.tag.ex{background:var(--sun-soft);color:var(--warn)}
+.tag.ad{background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line)}
+.tag.ad::before{display:none}
+.tag.infra{background:var(--infra-soft);color:var(--infra)}
+
+/* 리포트 레이아웃 */
+.report{position:relative;height:calc(100vh - 60px)}
+.stage{position:absolute;inset:0;background:var(--bg);overflow:hidden}
+.stage canvas{display:block;width:100%;height:100%}
+.side{position:absolute;z-index:5;left:16px;top:16px;bottom:16px;width:440px;overflow:auto;padding:22px 20px 20px;border-radius:var(--r-xl);background:rgba(247,248,250,.88);backdrop-filter:blur(18px) saturate(1.2);border:1px solid rgba(255,255,255,.9);box-shadow:var(--sh-3);scrollbar-width:thin}
+.head .eyebrow{display:flex;gap:6px;align-items:center}
+.head h2{font-size:22px;line-height:1.3;font-weight:700;letter-spacing:-.02em;margin:6px 0 10px}
+.meta{display:flex;flex-wrap:wrap;gap:6px}
+.meta span{font-size:13px;color:var(--ink-2);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:3px 8px}
+
+.hero{margin-top:18px;background:var(--surface);border-radius:var(--r-lg);padding:18px;box-shadow:var(--sh-1)}
+.hero .k{display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:600;color:var(--ink-2)}
+.hero .v{font-size:38px;font-weight:700;letter-spacing:-.03em;line-height:1.15;margin:8px 0 2px}
+.hero .s{font-size:14px;color:var(--ink-2)}
+.hero .s b{color:var(--ink);font-weight:600}
+.hero .bars{display:grid;gap:6px;margin-top:14px}
+.hero .bar{display:grid;grid-template-columns:30px 1fr;align-items:center;gap:8px;font-size:12px;color:var(--ink-3)}
+.hero .bar div{position:relative;height:6px;border-radius:3px;background:var(--line-2);overflow:hidden}
+.hero .bar div span{position:absolute;top:0;bottom:0;background:var(--sun);border-radius:3px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.tile{background:var(--surface);border-radius:var(--r-md);padding:12px 14px;box-shadow:var(--sh-1)}
+.tile .k{font-size:12px;color:var(--ink-2);font-weight:600}
+.tile .v{font-size:17px;font-weight:700;margin-top:2px}
+.tile.unk .v{color:var(--unk)} .tile.ok .v{color:var(--ok)} .tile.warn .v{color:var(--warn)}
+
+.card{background:var(--surface);border-radius:var(--r-lg);padding:16px 16px 14px;margin-top:12px;box-shadow:var(--sh-1)}
+.card h3{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;margin:0 0 10px}
+.card h3 .tag{margin-left:auto}
+.idx{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--accent)}
+.facts{display:grid;gap:0}
+.facts .hd,.facts .r{display:grid;grid-template-columns:72px 1fr 1fr;gap:10px}
+.facts .hd{font-size:12px;font-weight:600;color:var(--ink-3);padding-bottom:6px}
+.facts .r{padding:10px 0;border-top:1px solid var(--line-2);font-size:14px}
+.facts .r>div:first-child{color:var(--ink-2);font-size:13px}
+.src{display:block;font-size:12px;color:var(--ink-3);margin-top:2px;line-height:1.4}
+.foot{font-size:12px;color:var(--ink-3);margin-top:10px;line-height:1.5}
+.poi{display:grid;gap:2px}
+.poi div{display:flex;align-items:center;gap:10px;font-size:14px;padding:6px 0}
+.poi .ic{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-size:12px;font-weight:700;color:#fff;flex:none}
+.poi .d{margin-left:auto;font-weight:700;font-size:15px}
+.check{list-style:none;margin:0;padding:0;display:grid;gap:0}
+.check li{display:grid;grid-template-columns:20px 1fr;gap:10px;font-size:14px;padding:9px 0;border-top:1px solid var(--line-2)}
+.check li:first-child{border-top:0;padding-top:2px}
+.check li i{width:18px;height:18px;border:1.5px solid #C7CED9;border-radius:5px;margin-top:2px}
+.check li small{display:block;font-size:12px;color:var(--ink-3);margin-top:1px}
+.planwrap{position:relative;height:280px;border-radius:var(--r-md);overflow:hidden;background:linear-gradient(160deg,#E3E8F3,#CED7EA)}
+.planwrap canvas{width:100%;height:100%;display:block}
+.planwrap .note{position:absolute;left:10px;top:10px;display:flex;gap:6px;flex-wrap:wrap}
+.planwrap .msgline{position:absolute;left:10px;right:10px;bottom:10px;font-size:13px;font-weight:600;background:rgba(255,255,255,.92);border-radius:8px;padding:7px 10px}
+.side>.foot{margin:14px 4px 0}
+
+/* 3D 위 카드 */
+.hud{position:absolute;z-index:4;background:rgba(255,255,255,.86);backdrop-filter:blur(16px) saturate(1.2);border:1px solid rgba(255,255,255,.9);border-radius:var(--r-lg);box-shadow:var(--sh-2)}
+.hud-right{top:16px;right:16px;width:260px;padding:14px}
+.hud-right .lbl{font-size:12px;font-weight:600;color:var(--ink-3);margin:0 0 6px}
+.hud-right .grp+.grp{margin-top:14px;padding-top:12px;border-top:1px solid var(--line-2)}
+.seg{display:flex;gap:2px;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:3px}
+.seg button{flex:1;border:0;background:transparent;padding:7px 8px;border-radius:7px;font-weight:600;font-size:13px;cursor:pointer;color:var(--ink-2);white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(15,22,35,.12)}
+.seg.vert{flex-direction:column}
+.seg.vert button{text-align:left;display:flex;justify-content:space-between}
+.seg.vert button .num{color:var(--ink-3);font-weight:500}
+.wall-note{font-size:12px;color:var(--ink-2);margin-top:6px;line-height:1.45}
+.legend{display:grid;gap:6px;font-size:13px;color:var(--ink-2)}
+.legend span{display:flex;align-items:center;gap:8px}
+.legend span b{margin-left:auto;font-family:var(--mono);font-weight:500;color:var(--ink)}
+.legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.legend .osm{font-size:11px;color:var(--ink-3)}
+.hud-bottom{left:472px;right:292px;bottom:16px;padding:14px 18px 12px}
+.assume{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;color:var(--ink-2);background:var(--sun-soft);border-radius:10px;padding:8px 10px;margin-bottom:12px;line-height:1.45}
+.assume b{color:var(--warn);font-weight:700;white-space:nowrap}
+.timebar{display:flex;align-items:center;gap:12px}
+.play{width:34px;height:34px;border-radius:50%;border:0;background:var(--ink);color:#fff;display:grid;place-items:center;cursor:pointer;flex:none}
+.play svg{width:14px;height:14px}
+.clock{font-family:var(--mono);font-size:26px;font-weight:600;min-width:84px;letter-spacing:-.02em}
+input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:var(--line);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:2px solid var(--sun);box-shadow:0 1px 4px rgba(15,22,35,.25);cursor:pointer}
+.tl-rows{margin-top:12px;display:grid;gap:7px}
+.tl-row{display:grid;grid-template-columns:34px 1fr 210px;align-items:center;gap:10px;font-size:13px;color:var(--ink-2)}
+.tl-track{position:relative;height:10px;background:var(--line-2);border-radius:5px;overflow:hidden}
+.tl-track span{position:absolute;top:0;bottom:0;background:var(--sun);border-radius:5px}
+.tl-track b{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink)}
+.tl-row .txt{font-size:13px;font-weight:600;color:var(--ink);text-align:right}
+.tl-row .txt.none{color:var(--unk);font-family:inherit}
+.ticks{display:grid;grid-template-columns:34px 1fr 210px;gap:10px;font-family:var(--mono);font-size:11px;color:var(--ink-3)}
+.ticks div:nth-child(2){display:flex;justify-content:space-between}
+.readout{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.readout span{font-size:12.5px;color:var(--ink-2);background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:3px 8px}
+.readout span.st{color:var(--ink);font-weight:600}
+.readout span.st.lit{background:var(--sun-soft);border-color:transparent;color:var(--warn)}
+.readout .tag{padding:5px 8px}
+
+/* 시안 상태 막대 (검토용) */
+.review{display:none!important;position:fixed;right:16px;top:11px;z-index:50;background:rgba(15,22,35,.92);color:#fff;border-radius:10px;padding:5px;display:flex;gap:3px;align-items:center;font-size:12px;box-shadow:var(--sh-2)}
+.review b{padding:0 8px;font-weight:600;opacity:.7}
+.review button{border:0;border-radius:7px;padding:6px 9px;background:transparent;color:#fff;cursor:pointer;font-size:12px;opacity:.8}
+.review button[aria-pressed="true"]{background:#fff;color:var(--ink);opacity:1;font-weight:600}
+
+@media (max-width:1180px){ .hud-bottom{right:16px} .hud-right{top:16px} .side{width:400px} .hud-bottom{left:432px;bottom:16px} .hud-right{display:none} }
+@media (max-width:900px){
+  .top{height:auto;padding:10px 16px;flex-wrap:wrap;gap:10px}
+  .urlbar{order:3;flex-basis:100%;max-width:none}
+  .landing{padding:56px 16px 32px}.landing h1{font-size:30px}.landing p.lead{font-size:16px}
+  .bigurl{flex-direction:column}.promise{grid-template-columns:1fr 1fr}
+  .report{height:auto;display:flex;flex-direction:column}
+  .stage{position:relative;inset:auto;display:flex;flex-direction:column;order:-1}
+  .stage canvas{height:52vh}
+  .hud{position:static;border-radius:0;box-shadow:none;border:0;border-top:1px solid var(--line);backdrop-filter:none;background:var(--surface)}
+  .hud-right{display:block;width:auto}
+  .side{position:static;width:auto;border-radius:0;box-shadow:none;border:0;background:var(--bg);padding:16px}
+  .tl-row,.ticks{grid-template-columns:34px 1fr}
+  .tl-row .txt{grid-column:2;text-align:left}
+  .ticks div:nth-child(3){display:none}
+  .review{top:auto;bottom:8px;max-width:calc(100vw - 16px);flex-wrap:wrap}
+  .review b{display:none}
+}
+</style>
+<script src="listings-geo.js"></script>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body>
+
+<header class="top">
+  <div class="logo"><i></i>Prelook</div>
+  <form class="urlbar hidden" id="topForm"><input id="topUrl" aria-label="매물 링크"><button class="btn">다시 보기</button></form>
+</header>
+
+<main id="s-idle" class="landing">
+  <div class="kicker">집보기 전 리포트</div>
+  <h1>집 보러 가기 전에,<br>그 집의 햇빛과 서류부터</h1>
+  <p class="lead">매물 링크 하나로 공식 정보, 3D 햇빛 시간표, 주변 시설, 방문 체크리스트를 한 장에 모읍니다.</p>
+  <form class="bigurl" id="idleForm"><input id="idleUrl" aria-label="매물 링크" placeholder="피터팬 매물 링크를 붙여 넣으세요"><button class="btn lg">리포트 만들기</button></form>
+  <div class="hint">현재 피터팬(peterpanz.com/house/…) 매물만 읽습니다.</div>
+  <div class="chips">
+    <button class="chip" data-url="https://www.peterpanz.com/house/19929211">시연 매물 · 홍대 정문 앞 남향 2층</button>
+    <button class="chip" data-url="https://www.peterpanz.com/house/19921381">시연 매물 · 홍대입구 근린생활시설 4층</button>
+  </div>
+  <div class="promise">
+    <div><span class="n">01</span><b>공식 정보</b><span>건축물대장과 광고를 나란히</span></div>
+    <div><span class="n">02</span><b>햇빛 시간표</b><span>내 층 창문의 여름·겨울</span></div>
+    <div><span class="n">03</span><b>주변 시설</b><span>역·편의점·정류장 거리</span></div>
+    <div><span class="n">04</span><b>체크리스트</b><span>방문해서 볼 것만</span></div>
+  </div>
+</main>
+
+<main id="s-loading" class="loading hidden" aria-live="polite">
+  <div class="eyebrow" id="loadUrl"></div>
+  <h2>리포트를 만드는 중입니다</h2>
+  <div class="hint">보통 10초 안에 끝납니다.</div>
+  <ol class="steps" id="steps">
+    <li><span class="dot">✓</span>링크 읽기<small></small></li>
+    <li><span class="dot">✓</span>공식 정보 조회<small></small></li>
+    <li><span class="dot">✓</span>주변·햇빛 계산<small></small></li>
+    <li><span class="dot">✓</span>리포트 준비<small></small></li>
+  </ol>
+</main>
+
+<main id="s-unsupported" class="msg hidden">
+  <div class="box">
+    <span class="tag unk">지원 밖</span>
+    <h2>현재 피터팬 매물만 지원합니다</h2>
+    <p>넣은 링크: <code id="badUrl">https://sp.zigbang.com/share/villa/50688151</code><br>직방·다방 링크는 열지 않았고, 숫자도 만들지 않았습니다.</p>
+    <div class="row"><button class="btn" data-go="idle">다른 링크 넣기</button><button class="btn ghost" data-go="report">시연 매물로 보기</button></div>
+  </div>
+</main>
+
+<main id="s-infra" class="msg hidden">
+  <div class="box">
+    <span class="tag infra">조회 실패</span>
+    <h2>건축물대장 서버가 응답하지 않았습니다</h2>
+    <p>한 번 다시 시도했지만 응답이 비어 있었습니다. 매물에 공식 기록이 없다는 뜻은 아닙니다. 광고 정보와 주변 계산은 그대로 볼 수 있습니다.</p>
+    <div class="row"><button class="btn" data-go="report">다시 조회</button><button class="btn ghost" data-go="report">공식 정보 없이 보기</button></div>
+  </div>
+</main>
+
+<main id="s-report" class="report hidden">
+  <section class="side" id="side"></section>
+  <section class="stage" id="stage">
+    <canvas id="city"></canvas>
+    <div class="hud hud-right">
+      <div class="grp"><div class="lbl">계절</div><div class="seg" role="group" aria-label="계절"><button id="bSummer" aria-pressed="false">하지 6/21</button><button id="bWinter" aria-pressed="true">동지 12/22</button></div></div>
+      <div class="grp"><div class="lbl">창 위치</div><div class="seg vert" id="wallPick" role="group" aria-label="창 위치"></div><div class="wall-note" id="wallNote"></div></div>
+      <div class="grp" style="display:none"><div class="lbl">건물 높이</div><div class="seg" role="group" aria-label="건물 높이"><button id="hReg" aria-pressed="true">대장 보강</button><button id="hV11" aria-pressed="false">OSM 높이만</button></div><div class="wall-note" id="hNote"></div></div>
+      <div class="grp"><div class="lbl">범례</div><div class="legend" id="legend"></div></div>
+    </div>
+    <div class="hud hud-bottom">
+      <div class="assume" id="notice"></div>
+      <div class="timebar"><button class="play" id="play" aria-label="재생"><svg viewBox="0 0 14 14"><path d="M3 1.5v11l9-5.5z" fill="currentColor"/></svg></button><div class="clock num" id="clock">12:00</div><input type="range" id="t" min="300" max="1230" step="1" value="720" aria-label="시각"></div>
+      <div class="tl-rows">
+        <div class="tl-row"><span>하지</span><div class="tl-track" id="trSummer"></div><span class="txt num" id="txSummer"></span></div>
+        <div class="tl-row"><span>동지</span><div class="tl-track" id="trWinter"></div><span class="txt num" id="txWinter"></span></div>
+        <div class="ticks"><div></div><div><span>05</span><span>09</span><span>12</span><span>15</span><span>20</span></div><div></div></div>
+      </div>
+      <div class="readout" id="readout"></div>
+    </div>
+  </section>
+</main>
+
+<nav class="review" aria-label="시안 상태 보기">
+  <b>시안</b>
+  <button data-s="idle">입력 전</button>
+  <button data-s="loading">처리 중</button>
+  <button data-s="report" data-l="19929211">남향 2층</button>
+  <button data-s="report" data-l="19921381">근생 4층</button>
+  <button data-s="unsupported">지원 밖</button>
+  <button data-s="infra">조회 실패</button>
+</nav>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+const GEO = window.PRELOOK_GEO.listings;
+const DAYS = { summer: '2026-06-21', winter: '2026-12-22' };
+
+// 매물별 화면 사실값: demo-prelook-v1.json(v1.1)의 L·B·POI·VIOLATION case 고정값
+const LISTINGS = {
+  '19929211': {
+    title: '와우산로18길 25, 2층', meta: ['마포구 서교동', '원룸', '광고 20.64㎡', '남향', '1996년 승인'],
+    floor: 2, floors: 3, height: 12.1, dir: '남향',
+    tile1: ['공식 전용면적', '확인 불가', 'unk'],
+    rows: [
+      ['전용면적', '20.64㎡<span class="src">피터팬 표기 · 6.24평</span>', '<span class="tag unk">확인 불가</span><span class="src">지상 2층에 20.64㎡ 호가 3개이고, 대장 API 사이 층 표기가 달라 해당 호를 특정하지 못함</span>'],
+      ['층', '2층 / 3층', '지상 3층 · 지하 1층<span class="src">표제부 · 높이 12.1m</span>'],
+      ['용도', '공동주택', '공동주택<span class="src">다세대주택 · 집합건물</span>'],
+      ['준공', '1996.04.04', '1996.04.04<span class="src">사용승인일</span>'],
+      ['구조', '표기 없음', '철근콘크리트구조'],
+      ['위반건축물', '표기 없음 <span class="tag ad">"-"</span><span class="src">"-"는 "아님"이 아님</span>', '<span class="tag unk">확인 불가</span><span class="src">조회 API에 항목 없음</span>'],
+    ],
+    sig3: ['건축물 용도', '다세대주택', ''],
+    pois: [['편', '편의점', 82, '#2F7D4F', -45.8, 67.8], ['버', '버스 정류장', 97, '#2F5C8F', -6.8, 96.4], ['역', '지하철 출입구', 528, '#7A3E9D', -79.9, 522.3]],
+    check: [
+      ['남향 창 앞 건물이 낮에 얼마나 가리는지 직접 보기', '근거: 3D 가정 모델 햇빛 시간표'],
+      ['계약할 호수 확인하기', '근거: 대장 지상 2층에 같은 면적(20.64㎡) 호가 3개'],
+      ['관리비 7만원의 부과 항목 받아 두기', '근거: 피터팬 "기타 부과 7만원"'],
+      ['주차 불가 확인', '근거: 피터팬 "주차 불가"'],
+      ['등기부등본으로 근저당·압류 확인하기', '자동으로 확인할 수 없는 항목'],
+      ['수압, 곰팡이, 방음 확인하기', '방문해야만 알 수 있는 항목'],
+    ],
+  },
+  '19921381': {
+    title: '와우산로27길 68, 4층', meta: ['마포구 서교동', '원룸', '광고 16.5㎡', '북동향', '2005년 승인'],
+    floor: 4, floors: 4, height: 11.8, dir: '북동향',
+    tile1: ['공식 전용면적', '확인 불가', 'unk'],
+    rows: [
+      ['전용면적', '16.5㎡<span class="src">피터팬 표기 · 4.99평</span>', '<span class="tag unk">확인 불가</span><span class="src">일반건축물이라 호별 면적 기록 없음</span>'],
+      ['층', '4층 / 4층', '지상 4층<span class="src">표제부 · 높이 11.8m</span>'],
+      ['용도', '제2종 근린생활시설', '제2종근린생활시설<span class="src">기타 용도: 제1,2종근린생활시설</span>'],
+      ['준공', '2005.10.06', '2005.10.06<span class="src">사용승인일</span>'],
+      ['구조', '표기 없음', '철근콘크리트구조'],
+      ['위반건축물', '"위반건축물"<span class="src">광고 표기. 공식 확인이 아님</span>', '<span class="tag unk">확인 불가</span><span class="src">조회 API에 항목 없음</span>'],
+    ],
+    sig3: ['건축물 용도', '근린생활시설', 'warn'],
+    pois: [['편', '편의점', 76, '#2F7D4F', -63.3, 42.3], ['버', '버스 정류장', 146, '#2F5C8F', -49.1, 137.2], ['역', '지하철 출입구', 179, '#7A3E9D', -87.6, 156.7]],
+    check: [
+      ['근린생활시설 건물이라 전입신고·주거용 사용 가능 여부 묻기', '근거: 건축물대장 주용도 제2종근린생활시설'],
+      ['광고의 "위반건축물" 표기가 무엇인지 묻고 대장 원본 확인하기', '근거: 피터팬 표기 · API로는 확인 불가'],
+      ['꼭대기층이라 여름 더위와 누수 흔적 확인하기', '근거: 광고 4층/4층 · 대장 지상 4층'],
+      ['아침에만 해가 드는지 직접 보기', '근거: 북동향 · 3D 가정 모델'],
+      ['관리비 10만원에 포함된 항목 받아 두기', '근거: 피터팬 "정액 관리비 10만원"'],
+      ['등기부등본으로 근저당·압류 확인하기', '자동으로 확인할 수 없는 항목'],
+      ['수압, 곰팡이, 방음 확인하기', '방문해야만 알 수 있는 항목'],
+    ],
+  },
+};
+
+// 태양 위치(Astronomical Almanac 저정밀식, 기하 고도)
+function sun(dateStr, minute, LAT, LON) {
+  const t = Date.UTC(+dateStr.slice(0,4), +dateStr.slice(5,7)-1, +dateStr.slice(8,10), 0, minute) - 9*3600e3;
+  const n = t/86400e3 + 2440587.5 - 2451545.0, r = Math.PI/180;
+  const L = (280.460 + 0.9856474*n) % 360, g = ((357.528 + 0.9856003*n) % 360)*r;
+  const lam = (L + 1.915*Math.sin(g) + 0.020*Math.sin(2*g))*r, eps = (23.439 - 4e-7*n)*r;
+  const ra = Math.atan2(Math.cos(eps)*Math.sin(lam), Math.cos(lam)), dec = Math.asin(Math.sin(eps)*Math.sin(lam));
+  const ut = ((t/3600e3) % 24 + 24) % 24, gmst = ((6.697375 + 0.0657098242*n + ut) % 24 + 24) % 24;
+  const ha = ((gmst + LON/15) % 24)*15*r - ra, la = LAT*r;
+  const el = Math.asin(Math.sin(dec)*Math.sin(la) + Math.cos(dec)*Math.cos(la)*Math.cos(ha));
+  const az = Math.atan2(-Math.sin(ha), Math.tan(dec)*Math.cos(la) - Math.sin(la)*Math.cos(ha));
+  return { el: el/r, az: ((az/r) % 360 + 360) % 360 };
+}
+const RAD = Math.PI/180;
+const dirFrom = (az, el) => new THREE.Vector3(Math.sin(az*RAD)*Math.cos(el*RAD), Math.sin(el*RAD), -Math.cos(az*RAD)*Math.cos(el*RAD));
+const toV = (e, n, y = 0) => new THREE.Vector3(e, y, -n);
+const hhmm = m => `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
+const dur = t => [Math.floor(t/60) ? Math.floor(t/60) + '시간' : '', t%60 ? t%60 + '분' : ''].filter(Boolean).join(' ');
+const compass = az => ['북', '북동', '동', '남동', '남', '남서', '서', '북서'][Math.round(az/45) % 8];
+
+// ---------- 기준 모델 계산 (v1.1 assumption_models와 같은 식) ----------
+const cross = (ax, ay, bx, by) => ax*by - ay*bx;
+function rayHits(ox, oy, dx, dy, polys) {
+  const out = [];
+  for (const P of polys) for (let i = 0; i < P.p.length; i++) {
+    const [ax, ay] = P.p[i], [bx, by] = P.p[(i+1) % P.p.length], sx = bx - ax, sy = by - ay;
+    const den = cross(dx, dy, sx, sy); if (Math.abs(den) < 1e-12) continue;
+    const t = cross(ax - ox, ay - oy, sx, sy)/den, u = cross(ax - ox, ay - oy, dx, dy)/den;
+    if (t > 1e-9 && u >= -1e-9 && u <= 1 + 1e-9) out.push({ t, P });
+  }
+  return out.sort((a, b) => a.t - b.t);
+}
+let hmode = new URLSearchParams(location.search).get('h') === 'v11' ? 'v11' : 'reg';
+const H = o => hmode === 'reg' ? o.hr : o.h;
+function makeModel(lid, win) {
+  const g = GEO[lid].model, known = g.obstacles.filter(o => H(o) != null), [LAT, LON] = g.solar;
+  const state = (day, m) => {
+    const s = sun(day, m, LAT, LON);
+    if (s.el <= 0) return { lit: false, why: '해가 지평선 아래', s };
+    if (Math.cos((s.az - win.bearing)*RAD) <= 1e-9) return { lit: false, why: '해가 창 반대편', s };
+    const hit = rayHits(win.x, win.y, Math.sin(s.az*RAD), Math.cos(s.az*RAD), known).find(h => win.z + h.t*Math.tan(s.el*RAD) <= H(h.P));
+    return hit ? { lit: false, why: '앞 건물에 가림', s, hit } : { lit: true, why: '창에 해가 듦', s };
+  };
+  const intervals = day => { const out = []; let st = null; for (let m = 0; m <= 1440; m++) { const l = m < 1440 && state(day, m).lit; if (l && st === null) st = m; if (!l && st !== null) { out.push([st, m]); st = null; } } return out; };
+  const dx = Math.sin(win.bearing*RAD), dy = Math.cos(win.bearing*RAD);
+  const plan = rayHits(win.x, win.y, dx, dy, g.obstacles)[0];
+  const atWin = rayHits(win.x, win.y, dx, dy, known).find(h => H(h.P) >= win.z);
+  return { state, iv: { summer: intervals(DAYS.summer), winter: intervals(DAYS.winter) }, plan, atWin, LAT, LON };
+}
+
+// ---------- 3D ----------
+const canvas = document.getElementById('city');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+const scene = new THREE.Scene();
+const SKY = new THREE.Color('#EEF1F5');
+scene.background = SKY.clone(); scene.fog = new THREE.Fog(SKY.clone(), 380, 900);
+const camera = new THREE.PerspectiveCamera(34, 1, 1, 3000);
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true; controls.maxPolarAngle = Math.PI*0.46; controls.minDistance = 40; controls.maxDistance = 520;
+const hemi = new THREE.HemisphereLight('#FFFFFF', '#C8C1B2', 0.6); scene.add(hemi);
+const sunLight = new THREE.DirectionalLight('#FFF3DA', 2.4);
+sunLight.castShadow = true; sunLight.shadow.mapSize.set(4096, 4096);
+Object.assign(sunLight.shadow.camera, { left: -200, right: 200, top: 200, bottom: -200, near: 1, far: 1400 });
+sunLight.shadow.bias = -0.0003; sunLight.shadow.normalBias = 0.3;
+scene.add(sunLight, sunLight.target);
+const ground = new THREE.Mesh(new THREE.CircleGeometry(900, 64), new THREE.MeshStandardMaterial({ color: '#E6EAF0', roughness: 1 }));
+ground.rotation.x = -Math.PI/2; ground.receiveShadow = true; scene.add(ground);
+
+const M = {
+  known: new THREE.MeshStandardMaterial({ color: '#FFFFFF', roughness: 0.9 }),
+  ctx: new THREE.MeshLambertMaterial({ color: '#E9ECF1', emissive: '#C9D0DA', emissiveIntensity: 0.55 }),
+  home: new THREE.MeshStandardMaterial({ color: '#2F4FE0', roughness: 0.6 }),
+  unk: new THREE.MeshStandardMaterial({ color: '#D5DAE2', roughness: 1 }),
+  flat: new THREE.MeshStandardMaterial({ color: '#E0E4EA', roughness: 1 }),
+};
+function label(text, color, scale = 1) {
+  const c = document.createElement('canvas'); c.width = 360; c.height = 96; const x = c.getContext('2d');
+  x.font = '700 38px Pretendard, sans-serif'; const w = Math.min(352, x.measureText(text).width + 48);
+  x.fillStyle = color; x.beginPath(); x.roundRect((360 - w)/2, 10, w, 72, 36); x.fill();
+  x.fillStyle = '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(text, 180, 47);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false, depthWrite: false, fog: false })); s.scale.set(30*scale, 8*scale, 1); s.renderOrder = 10; return s;
+}
+function pinLabel(ic, text, color) {
+  const c = document.createElement('canvas'); c.width = 400; c.height = 112; const x = c.getContext('2d');
+  x.font = '600 36px Pretendard, sans-serif'; const w = Math.min(392, x.measureText(text).width + 110), x0 = (400 - w)/2;
+  x.shadowColor = 'rgba(20,26,36,.18)'; x.shadowBlur = 14; x.shadowOffsetY = 4;
+  x.fillStyle = '#FFFFFF'; x.beginPath(); x.roundRect(x0, 12, w, 80, 40); x.fill(); x.shadowColor = 'transparent';
+  x.fillStyle = color; x.beginPath(); x.arc(x0 + 42, 52, 28, 0, Math.PI*2); x.fill();
+  x.fillStyle = '#FFFFFF'; x.font = '700 30px Pretendard, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(ic, x0 + 42, 53);
+  x.fillStyle = '#141A24'; x.font = '600 34px Pretendard, sans-serif'; x.textAlign = 'left'; x.fillText(text, x0 + 82, 53);
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthTest: false, depthWrite: false, fog: false })); s.scale.set(32, 9, 1); s.renderOrder = 10; return s;
+}
+const extrude = (p, h) => { const g = new THREE.ExtrudeGeometry(new THREE.Shape(p.map(([e, n]) => new THREE.Vector2(e, n))), { depth: h, bevelEnabled: false }); g.rotateX(-Math.PI/2); return g; };
+const lineSeg = (grp, pts, color, opacity, dashed) => {
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  const l = new THREE.LineSegments(g, dashed ? new THREE.LineDashedMaterial({ color, dashSize: 1.6, gapSize: 1.2, transparent: true, opacity }) : new THREE.LineBasicMaterial({ color, transparent: true, opacity }));
+  if (dashed) l.computeLineDistances(); grp.add(l); return l;
+};
+const outlinePts = (p, y) => { const out = []; p.forEach(([e, n], i) => { const [e2, n2] = p[(i+1) % p.length]; out.push(e, y, -n, e2, y, -n2); }); return out; };
+
+let world = null, model = null, win = null, cur = null, season = 'winter';
+const RS = 120;
+function buildWorld(lid) {
+  if (world) { scene.remove(world); world.traverse(o => { o.geometry?.dispose(); }); }
+  world = new THREE.Group(); scene.add(world);
+  const G = GEO[lid], L = LISTINGS[lid];
+  // 도로
+  { const pos = [], idx = []; G.roads.forEach(r => { const hw = r.w/2; for (let i = 0; i < r.p.length - 1; i++) { const [e1, n1] = r.p[i], [e2, n2] = r.p[i+1], dx = e2 - e1, dy = n2 - n1, l = Math.hypot(dx, dy) || 1, ox = -dy/l*hw, oy = dx/l*hw, b = pos.length/3; [[e1+ox, n1+oy], [e1-ox, n1-oy], [e2-ox, n2-oy], [e2+ox, n2+oy]].forEach(([e, n]) => pos.push(e, 0.06, -n)); idx.push(b, b+1, b+2, b, b+2, b+3); } });
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+    const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: '#F8F9FB', roughness: 1, side: THREE.DoubleSide })); m.receiveShadow = true; world.add(m); }
+  // 계산 밖 보기용 건물
+  const ctxG = [], flatG = [];
+  G.context.forEach(b => { const hh = hmode === 'reg' ? b.hr : b.h; (hh ? ctxG : flatG).push(extrude(b.p, hh || 0.3)); });
+  if (ctxG.length) { const m = new THREE.Mesh(mergeGeometries(ctxG), M.ctx); world.add(m); }
+  if (flatG.length) { const m = new THREE.Mesh(mergeGeometries(flatG), M.flat); m.receiveShadow = true; world.add(m); }
+  // 계산 모델: 높이 확인 / 높이 미상
+  const kG = [], uG = [], floors = [], unkLines = [];
+  G.model.obstacles.forEach(o => {
+    const oh = H(o); if (oh != null) { kG.push(extrude(o.p, oh)); for (let y = 3; y < oh - 0.5; y += 3) floors.push(...outlinePts(o.p, y)); }
+    else { uG.push(extrude(o.p, 0.5)); unkLines.push(...outlinePts(o.p, 0.55)); }
+  });
+  const blockers = [];
+  if (kG.length) { const g = mergeGeometries(kG), m = new THREE.Mesh(g, M.known); m.castShadow = m.receiveShadow = true; world.add(m); blockers.push(m);
+    world.add(new THREE.LineSegments(new THREE.EdgesGeometry(g, 25), new THREE.LineBasicMaterial({ color: '#A3ACBA', transparent: true, opacity: 0.6 }))); }
+  if (uG.length) { const m = new THREE.Mesh(mergeGeometries(uG), M.unk); m.receiveShadow = true; world.add(m); lineSeg(world, unkLines, '#8C96A6', 0.9, true); }
+  lineSeg(world, floors, '#C9CFD8', 0.6);
+  // 이 집
+  { const g = extrude(G.model.target, L.height), m = new THREE.Mesh(g, M.home); m.castShadow = m.receiveShadow = true; world.add(m);
+    const f = []; for (let k = 1; k < L.floors; k++) f.push(...outlinePts(G.model.target, k*L.height/L.floors)); lineSeg(world, f, '#BFCBFF', 0.9);
+    world.add(new THREE.LineSegments(new THREE.EdgesGeometry(g, 25), new THREE.LineBasicMaterial({ color: '#1C34A8' })));
+    const lab = label(`이 집 ${L.floor}층`, '#2F4FE0', 1.0); lab.position.set(0, L.height + 12, 0); world.add(lab); }
+  // 나무(보기용, 계산 제외)
+  { const n = G.trees.length, trunk = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.25, 0.3, 3, 6), new THREE.MeshStandardMaterial({ color: '#9C8B74' }), n), crown = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(2.6, 1), new THREE.MeshStandardMaterial({ color: '#BCD7B0', roughness: 1, flatShading: true }), n), X = new THREE.Matrix4();
+    G.trees.forEach(([e, nn], i) => { const s = 0.8 + (i*7 % 5)/10; X.makeScale(1, 1, 1).setPosition(e, 1.5, -nn); trunk.setMatrixAt(i, X); X.makeScale(s, s*1.1, s).setPosition(e, 3 + 2.4*s, -nn); crown.setMatrixAt(i, X); }); world.add(trunk, crown); }
+  // 계산 범위 100m
+  { const pts = []; for (let i = 0; i < 128; i++) { const a = i/128*Math.PI*2, b = (i+1)/128*Math.PI*2; pts.push(Math.sin(a)*100, 0.5, -Math.cos(a)*100, Math.sin(b)*100, 0.5, -Math.cos(b)*100); } lineSeg(world, pts, '#1F4D3F', 0.8, true);
+    const l = label('계산 범위 100m', '#1F4D3F', 0.55); l.position.set(70.7, 3, 70.7); world.add(l); }
+  // 방위 원
+  { const ring = new THREE.Mesh(new THREE.RingGeometry(RS - 5, RS, 128), new THREE.MeshBasicMaterial({ color: '#FFFFFF', transparent: true, opacity: 0.7, side: THREE.DoubleSide, depthWrite: false })); ring.rotation.x = -Math.PI/2; ring.position.y = 0.4; world.add(ring);
+    const tk = []; for (let a = 0; a < 360; a += 5) { const l = a % 45 === 0 ? 6 : a % 15 === 0 ? 3.5 : 1.8, s = Math.sin(a*RAD), c = -Math.cos(a*RAD); tk.push(s*RS, 0.5, c*RS, s*(RS - l), 0.5, c*(RS - l)); } lineSeg(world, tk, '#5A625E', 0.9);
+    [['N', 0], ['E', 90], ['S', 180], ['W', 270]].forEach(([t, a]) => { const s = label(t, a === 0 ? '#A3302A' : '#5A625E', 0.5); s.position.set(Math.sin(a*RAD)*(RS + 11), 2, -Math.cos(a*RAD)*(RS + 11)); world.add(s); }); }
+  // 주변 시설
+  L.pois.forEach(([ic, name, d, c, e, n]) => {
+    const pos = toV(e, n);
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 14, 8), new THREE.MeshBasicMaterial({ color: '#FFFFFF' })); stem.position.copy(pos).setY(7); world.add(stem);
+    const dot = new THREE.Mesh(new THREE.CircleGeometry(2.4, 32), new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.25 })); dot.rotation.x = -Math.PI/2; dot.position.copy(pos).setY(0.2); world.add(dot);
+    const s = pinLabel(ic, `${name.replace(' 출입구', '').replace(' 정류장', '')} ${d}m`, c); s.position.copy(pos).setY(19); world.add(s);
+    world.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.LineCurve3(new THREE.Vector3(0, 0.6, 0), pos.clone().setY(0.6)), 1, 0.35, 6), new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.7 })));
+  });
+  // 태양 궤적
+  const [LAT, LON] = G.model.solar;
+  const arc = day => { const pts = []; for (let m = 240; m <= 1260; m += 5) { const s = sun(day, m, LAT, LON); if (s.el > -0.5) pts.push(dirFrom(s.az, Math.max(s.el, 0)).multiplyScalar(RS)); } return new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 200, 0.7, 6), arcMat.off); };
+  world.userData.arcs = { summer: arc(DAYS.summer), winter: arc(DAYS.winter) }; world.add(world.userData.arcs.summer, world.userData.arcs.winter);
+  // 창
+  world.userData.winMesh = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 1.6), new THREE.MeshBasicMaterial({ color: '#1F4D3F', side: THREE.DoubleSide }));
+  world.userData.winRing = new THREE.Mesh(new THREE.RingGeometry(2.2, 3.0, 40), new THREE.MeshBasicMaterial({ color: '#E8A317', side: THREE.DoubleSide }));
+  world.add(world.userData.winMesh, world.userData.winRing);
+  const far = Math.max(150, L.height*5);
+  camera.position.set(Math.sin((G.model.bearing + 35)*RAD)*far*1.3, far*1.1, -Math.cos((G.model.bearing + 35)*RAD)*far*1.3);
+  controls.target.set(0, L.height*0.5, 0); controls.update();
+}
+const arcMat = { on: new THREE.MeshBasicMaterial({ color: '#E8A317' }), off: new THREE.MeshBasicMaterial({ color: '#B9BDB9', transparent: true, opacity: 0.7 }) };
+const sunBall = new THREE.Mesh(new THREE.SphereGeometry(5, 24, 16), new THREE.MeshBasicMaterial({ color: '#FFC93C' })); scene.add(sunBall);
+const glow = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'), g = x.createRadialGradient(64, 64, 0, 64, 64, 64); g.addColorStop(0, 'rgba(255,214,90,0.9)'); g.addColorStop(1, 'rgba(255,214,90,0)'); x.fillStyle = g; x.fillRect(0, 0, 128, 128); const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), depthWrite: false, fog: false })); s.scale.set(34, 34, 1); scene.add(s); return s; })();
+let timeLab = null, rayMesh = null, frontMesh = null;
+const rayMat = { lit: new THREE.MeshBasicMaterial({ color: '#E8A317' }), off: new THREE.MeshBasicMaterial({ color: '#8A8F93', transparent: true, opacity: 0.7 }) };
+
+// 창 후보: 기준 가정(광고 방향) + 실제 외벽 두 개(사용자 수정)
+function windowOptions(lid) {
+  const g = GEO[lid].model, hp = g.target, [wx, wy, wz] = g.window;
+  const sgn = Math.sign(hp.reduce((s, [x1, y1], i) => { const [x2, y2] = hp[(i+1) % hp.length]; return s + x1*y2 - x2*y1; }, 0));
+  const walls = hp.map(([e1, n1], i) => { const [e2, n2] = hp[(i+1) % hp.length], dx = e2 - e1, dy = n2 - n1, l = Math.hypot(dx, dy), ne = sgn > 0 ? dy/l : -dy/l, nn = sgn > 0 ? -dx/l : dx/l, az = (Math.atan2(ne, nn)/RAD + 360) % 360; return { l, az, x: (e1 + e2)/2 + ne*0.05, y: (n1 + n2)/2 + nn*0.05, diff: Math.abs(((az - g.bearing + 540) % 360) - 180) }; }).filter(w => w.l > 3).sort((a, b) => a.diff - b.diff);
+  const pick = [walls[0]]; for (const w of walls) if (Math.abs(((w.az - pick[0].az + 540) % 360) - 180) > 30) { pick.push(w); break; }
+  const opts = [{ label: `광고 방향 (기준 가정)<span class="num">${g.bearing}°</span>`, x: wx, y: wy, z: wz, bearing: g.bearing, user: false }];
+  if (pick[0].diff > 10) pick.forEach(w => opts.push({ label: `${compass(w.az)}쪽 외벽<span class="num">${Math.round(w.az)}°</span>`, x: w.x, y: w.y, z: wz, bearing: Math.round(w.az*10)/10, user: true }));
+  return { opts, mismatch: pick[0].diff > 10, walls: pick };
+}
+
+function placeWindow(o) {
+  win = o; model = makeModel(cur, o);
+  const n = new THREE.Vector3(Math.sin(o.bearing*RAD), 0, -Math.cos(o.bearing*RAD)), p = toV(o.x, o.y, o.z);
+  const { winMesh, winRing } = world.userData;
+  winMesh.position.copy(p); winMesh.lookAt(p.clone().add(n)); winRing.position.copy(p).addScaledVector(n, 0.15); winRing.lookAt(winRing.position.clone().add(n));
+  world.userData.n = n; world.userData.p = p;
+  if (frontMesh) { world.remove(frontMesh); frontMesh = null; }
+  const hit = model.atWin || model.plan;
+  if (hit) { const q = toV(o.x + Math.sin(o.bearing*RAD)*hit.t, o.y + Math.cos(o.bearing*RAD)*hit.t, model.atWin ? o.z : 0.6); frontMesh = new THREE.Mesh(new THREE.TubeGeometry(new THREE.LineCurve3(model.atWin ? p : p.clone().setY(0.6), q), 1, 0.22, 6), new THREE.MeshBasicMaterial({ color: '#1D2321' })); world.add(frontMesh); }
+  const frac = m => (m - 300) / (1230 - 300) * 100;
+  for (const [key, tr, tx] of [['summer', 'trSummer', 'txSummer'], ['winter', 'trWinter', 'txWinter']]) {
+    const iv = model.iv[key], tot = iv.reduce((s, [a, b]) => s + b - a, 0), el = document.getElementById(tx);
+    document.getElementById(tr).innerHTML = iv.map(([a, b]) => `<span style="left:${frac(Math.max(a, 300))}%;width:${frac(Math.min(b, 1230)) - frac(Math.max(a, 300))}%"></span>`).join('') + '<b></b>';
+    el.classList.toggle('none', !iv.length); el.textContent = iv.length ? iv.map(([a, b]) => `${hhmm(a)}–${hhmm(b)}`).join(', ') + ` (${dur(tot)})` : '창으로 해가 들지 않음';
+  }
+  const wt = model.iv.winter.reduce((s, [a, b]) => s + b - a, 0);
+  document.getElementById('sigWinter').textContent = wt ? dur(wt) : '없음';
+  const ivText = iv => iv.length ? iv.map(([a, b]) => `${hhmm(a)}–${hhmm(b)}`).join(', ') : '해가 들지 않음';
+  document.getElementById('heroIv').innerHTML = `동지 <b class="num">${ivText(model.iv.winter)}</b> · 하지 <span class="num">${ivText(model.iv.summer)}</span>`;
+  for (const [k, id] of [['summer', 'hbS'], ['winter', 'hbW']]) document.getElementById(id).innerHTML = model.iv[k].map(([a, b]) => `<span style="left:${a/14.4}%;width:${(b - a)/14.4}%"></span>`).join('');
+  document.getElementById('sigTag').textContent = o.user ? '사용자 수정' : '가정 모델';
+  document.getElementById('sigTag').className = 'tag ' + (o.user ? 'warn' : 'ex');
+  window.__iv = model.iv; window.__front = { plan: model.plan && model.plan.t, atWin: model.atWin && model.atWin.t };
+  update();
+}
+
+function update() {
+  if (!model) return;
+  const m = +tInput.value, day = DAYS[season], r = model.state(day, m), s = r.s, { n, p, winRing, arcs } = world.userData;
+  document.getElementById('clock').textContent = hhmm(m);
+  const d = dirFrom(s.az, Math.max(s.el, 0.5));
+  sunLight.position.copy(d.clone().multiplyScalar(600)); sunLight.target.position.set(0, 0, 0);
+  const up = Math.max(0, Math.sin(s.el*RAD));
+  sunLight.intensity = s.el > 0 ? 0.8 + 2.2*Math.min(1, up*2.2) : 0;
+  hemi.intensity = s.el > 0 ? 0.7 + 0.2*up : 0.6;
+  const sky = s.el > 0 ? SKY.clone().lerp(new THREE.Color('#F2E4D2'), Math.max(0, 1 - up*4)) : new THREE.Color('#AEB8C8');
+  scene.background = sky; scene.fog.color = sky;
+  const sp = dirFrom(s.az, Math.max(s.el, 0)).multiplyScalar(RS);
+  sunBall.position.copy(sp); glow.position.copy(sp); sunBall.visible = glow.visible = s.el > -0.5;
+  if (timeLab) { scene.remove(timeLab); timeLab.material.map.dispose(); }
+  timeLab = label(hhmm(m), '#E8A317', 0.6); timeLab.position.copy(sp).add(new THREE.Vector3(0, 11, 0)); timeLab.visible = sunBall.visible; scene.add(timeLab);
+  arcs.summer.material = season === 'summer' ? arcMat.on : arcMat.off; arcs.winter.material = season === 'winter' ? arcMat.on : arcMat.off;
+  if (rayMesh) { world.remove(rayMesh); rayMesh.geometry.dispose(); rayMesh = null; }
+  if (s.el > 0 && Math.cos((s.az - win.bearing)*RAD) > 1e-9) {
+    const end = r.hit ? toV(win.x + Math.sin(s.az*RAD)*r.hit.t, win.y + Math.cos(s.az*RAD)*r.hit.t, win.z + r.hit.t*Math.tan(s.el*RAD)) : sp;
+    rayMesh = new THREE.Mesh(new THREE.TubeGeometry(new THREE.LineCurve3(p, end), 1, r.lit ? 0.4 : 0.28, 6), r.lit ? rayMat.lit : rayMat.off); world.add(rayMesh);
+  }
+  winRing.material.color.set(r.lit ? '#E8A317' : '#8A8F93');
+  const frac = x => (x - 300) / (1230 - 300) * 100;
+  ['trSummer', 'trWinter'].forEach(id => { const b = document.querySelector('#' + id + ' b'); if (!b) return; b.style.left = frac(m) + '%'; b.style.visibility = (id === 'trSummer') === (season === 'summer') ? 'visible' : 'hidden'; });
+  const front = model.atWin ? `창 앞 ${model.atWin.t.toFixed(1)}m 건물이 창 높이를 막음` : model.plan ? `정면 외곽선 ${model.plan.t.toFixed(1)}m · 창 높이에서는 열림(높이 반영 건물 기준)` : '정면에 계산 대상 건물 없음';
+  document.getElementById('readout').innerHTML = `<span class="st ${r.lit ? 'lit' : ''}">${r.why}</span><span class="num">고도 ${s.el.toFixed(1)}° · 방위 ${s.az.toFixed(0)}°</span><span>${front}</span>${win.user ? '<span class="tag warn">사용자 수정 · 기준 밖</span>' : ''}`;
+  plan.update(d, r.lit, r.why, win.bearing);
+}
+
+function updateNotice(lid) {
+  const G = GEO[lid].model, ui = G.ui, obs = G.obstacles;
+  const nUnk = obs.filter(o => H(o) == null).length, nKnown = obs.length - nUnk;
+  const nOsm = obs.filter(o => o.h != null).length, nRegH = obs.filter(o => o.h == null && o.rsrc === 'registry-heit').length, nRegF = obs.filter(o => o.h == null && o.rsrc === 'registry-floors-x3').length;
+  const srcN = (k) => obs.filter((o) => String(o.src || '').toUpperCase().includes(k)).length;
+  document.getElementById('notice').innerHTML = `<b>${ui.always_visible_assumption_notice}</b><span>${ui.window_height_notice} · ${ui.height_coverage_notice} · 평지 가정, 나무 제외 · 실제 집의 확정 일조시간이 아님</span>`;
+  document.getElementById('hNote').textContent = hmode === 'reg' ? `OSM 도로명 주소를 건축물대장 표제부와 맞춰 ${nRegH + nRegF}동을 채웠습니다. 주소가 없거나 대장과 맞지 않는 건물은 높이 미상으로 남깁니다.` : 'OSM에 높이가 적힌 건물만 씁니다. 대장 보강과 비교용입니다.';
+  document.getElementById('legend').innerHTML = `<span><i style="background:#2F4FE0"></i>이 집</span><span><i style="background:#fff;border:1px solid #A3ACBA"></i>높이 반영<b>${nKnown}</b></span><span><i style="background:#D5DAE2;border:1px dashed #8C96A6"></i>높이 미상<b>${nUnk}</b></span><span><i style="background:#E4E8EE;border:1px solid #CDD3DC"></i>계산 밖(보기용)</span><span class="osm">외곽선 © OpenStreetMap · 높이 OSM·건축HUB</span>`;
+}
+function setHeightMode(m) {
+  if (m === hmode) return; hmode = m;
+  document.getElementById('hReg').setAttribute('aria-pressed', m === 'reg'); document.getElementById('hV11').setAttribute('aria-pressed', m === 'v11');
+  const cp = camera.position.clone(), ct = controls.target.clone();
+  buildWorld(cur); camera.position.copy(cp); controls.target.copy(ct); controls.update();
+  updateNotice(cur); placeWindow(win);
+}
+// ---------- 리포트 ----------
+function renderSide(lid) {
+  const L = LISTINGS[lid], G = GEO[lid].model;
+  document.getElementById('side').innerHTML = `
+    <div class="head"><div class="eyebrow">피터팬 <span class="mono">${lid}</span></div><h2>${L.title}</h2>
+      <div class="meta">${L.meta.map(m => `<span>${m}</span>`).join('')}</div></div>
+    <div class="hero">
+      <div class="k">동지 창 햇빛 <span class="tag ex" id="sigTag">가정 모델</span></div>
+      <div class="v num" id="sigWinter">—</div>
+      <div class="s" id="heroIv"></div>
+      <div class="bars"><div class="bar">하지<div id="hbS"></div></div><div class="bar">동지<div id="hbW"></div></div></div>
+    </div>
+    <div class="tiles">
+      <div class="tile ${L.tile1[2]}"><div class="k">${L.tile1[0]}</div><div class="v">${L.tile1[1]}</div></div>
+      <div class="tile ${L.sig3[2]}"><div class="k">${L.sig3[0]}</div><div class="v">${L.sig3[1]}</div></div>
+    </div>
+    <div class="card"><h3><span class="idx">01</span>광고와 공식 기록</h3>
+      <div class="facts"><div class="hd"><div></div><div>매물 광고</div><div>건축물대장</div></div>${L.rows.map(r => `<div class="r"><div>${r[0]}</div><div class="num">${r[1]}</div><div class="num">${r[2]}</div></div>`).join('')}</div>
+      <div class="foot">피터팬·건축HUB 표제부 2026-10-16 조회. 출처별 기록이며 적법·안전 여부를 판정하지 않습니다.</div></div>
+    <div class="card"><h3><span class="idx">02</span>걸어서 닿는 곳 <span class="tag unk">언덕 확인 불가</span></h3>
+      <div class="poi">${L.pois.map(([ic, name, d, c]) => `<div><span class="ic" style="background:${c}">${ic}</span>${name}<span class="d num">${d}m</span></div>`).join('')}</div>
+      <div class="foot">OpenStreetMap 등록 지점까지의 직선거리입니다. 도보 거리와 경사는 다릅니다.</div></div>
+    <div class="card"><h3><span class="idx">03</span>방 안 햇빛 <span class="tag ex">예시 배치</span></h3>
+      <div class="planwrap"><canvas id="plan"></canvas><div class="note"><span class="tag ex">예시 배치, 실제 구조 아님</span><span class="tag unk">크기 미확정</span></div><div class="msgline" id="planMsg">—</div></div>
+      <div class="row" style="margin-top:10px"><button class="btn ghost">평면도 사진 올리기</button></div>
+      <div class="foot">매물에 평면도가 없어 원룸 기본 배치로 보여 줍니다. 창 방향은 오른쪽 창 위치를 따릅니다.</div></div>
+    <div class="card"><h3><span class="idx">04</span>방문해서 확인할 것</h3><ul class="check">${L.check.map(([a, b]) => `<li><i></i><div>${a}<small>${b}</small></div></li>`).join('')}</ul></div>
+    <div class="foot">Prelook은 매물 추천이나 법적 판정을 하지 않습니다. 숫자는 공공데이터와 계산에서 나오고, AI는 문장만 씁니다.</div>`;
+  updateNotice(lid);
+  plan.mount();
+}
+
+// ---------- 방 안 (예시 배치) ----------
+const plan = (() => {
+  // 아이소메트릭 단면 방 (레퍼런스: 앞 두 벽을 잘라 낸 방, 두꺼운 벽 단면, 나무 바닥)
+  let r2, sc, cam, L, room, cv;
+  const W = 3.4, D = 4.6, HH = 2.5, T = 0.18;
+  function planks() {
+    const c = document.createElement('canvas'); c.width = 512; c.height = 512; const x = c.getContext('2d');
+    x.fillStyle = '#C99A6B'; x.fillRect(0, 0, 512, 512);
+    for (let i = 0; i < 8; i++) { x.fillStyle = i % 2 ? '#C4946500' : 'rgba(255,255,255,0.05)'; x.fillRect(i*64, 0, 64, 512); }
+    x.strokeStyle = 'rgba(90,55,25,0.35)'; x.lineWidth = 2;
+    for (let i = 0; i <= 8; i++) { x.beginPath(); x.moveTo(i*64, 0); x.lineTo(i*64, 512); x.stroke(); }
+    for (let i = 0; i < 8; i++) { const y = (i*173) % 512; x.beginPath(); x.moveTo(i*64, y); x.lineTo(i*64 + 64, y); x.stroke(); }
+    const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1.6, 2.2); t.colorSpace = THREE.SRGBColorSpace; return t;
+  }
+  function mount() {
+    cv = document.getElementById('plan');
+    r2?.dispose(); r2 = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true }); r2.setPixelRatio(Math.min(devicePixelRatio, 2));
+    r2.shadowMap.enabled = true; r2.shadowMap.type = THREE.PCFSoftShadowMap; r2.toneMapping = THREE.ACESFilmicToneMapping;
+    sc = new THREE.Scene();
+    cam = new THREE.OrthographicCamera(-3.4, 3.4, 3.4, -3.4, 0.1, 100);
+    sc.add(new THREE.HemisphereLight('#FFFFFF', '#B9C2D3', 1.15));
+    const fill = new THREE.DirectionalLight('#FFFFFF', 0.35); fill.position.set(-4, 6, 5); sc.add(fill);
+    L = new THREE.DirectionalLight('#FFE9C2', 3.2); L.castShadow = true; L.shadow.mapSize.set(2048, 2048);
+    Object.assign(L.shadow.camera, { left: -5, right: 5, top: 5, bottom: -5, near: 0.1, far: 40 }); L.shadow.bias = -0.0004; L.shadow.radius = 4; sc.add(L, L.target);
+    room = new THREE.Group(); sc.add(room);
+    const wall = new THREE.MeshStandardMaterial({ color: '#F4F5F7', roughness: 0.95 });
+    const cut = new THREE.MeshStandardMaterial({ color: '#59606B', roughness: 1 });
+    const wood = new THREE.MeshStandardMaterial({ color: '#8A5A36', roughness: 0.8 });
+    const box = (w, h, d, x, y, z, m = wall, shadow = true) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); b.position.set(x, y, z); b.castShadow = shadow; b.receiveShadow = true; room.add(b); return b; };
+    // 바닥 판과 단면
+    box(W + T*2, 0.16, D + T*2, 0, -0.08, 0, cut);
+    const fl = new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshStandardMaterial({ map: planks(), roughness: 0.55 })); fl.rotation.x = -Math.PI/2; fl.position.y = 0.001; fl.receiveShadow = true; room.add(fl);
+    // 창 벽(로컬 -z): 창 구멍을 남기고 네 조각
+    const ww = 1.7, wb = 0.85, wt = 2.15, z = -D/2 - T/2;
+    box((W - ww)/2 + T, HH, T, -(W + ww)/4 - T/2, HH/2, z); box((W - ww)/2 + T, HH, T, (W + ww)/4 + T/2, HH/2, z);
+    box(ww, wb, T, 0, wb/2, z); box(ww, HH - wt, T, 0, wt + (HH - wt)/2, z);
+    // 창틀과 유리
+    const frame = new THREE.MeshStandardMaterial({ color: '#6E4A2E', roughness: 0.7 });
+    box(ww, 0.06, T + 0.04, 0, wb, z, frame); box(ww, 0.06, T + 0.04, 0, wt, z, frame); box(0.06, wt - wb, T + 0.04, -ww/2, (wb + wt)/2, z, frame); box(0.06, wt - wb, T + 0.04, ww/2, (wb + wt)/2, z, frame); box(0.05, wt - wb, 0.05, 0, (wb + wt)/2, z, frame);
+    const glass = new THREE.Mesh(new THREE.PlaneGeometry(ww, wt - wb), new THREE.MeshPhysicalMaterial({ color: '#CFE3F1', transparent: true, opacity: 0.18, roughness: 0.05 })); glass.position.set(0, (wb + wt)/2, z); room.add(glass);
+    // 옆 벽(로컬 -x)
+    box(T, HH, D + T, -W/2 - T/2, HH/2, -T/2);
+    // 벽 위 단면
+    box(W + T*2, 0.02, T, 0, HH + 0.01, z, cut, false); box(T, 0.02, D + T, -W/2 - T/2, HH + 0.01, -T/2, cut, false);
+    // 잘라 낸 앞 두 벽: 보이지 않지만 그림자는 만든다
+    const inv = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
+    box(T, HH, D + T*2, W/2 + T/2, HH/2, 0, inv); box(W + T*2, HH, T, 0, HH/2, D/2 + T/2, inv); box(W + T*2, T, D + T*2, 0, HH + T/2, 0, inv);
+    // 가구 (예시)
+    box(1.3, 0.28, 2.1, -W/2 + 0.75, 0.14, 0.9, wood);
+    box(1.2, 0.18, 2.0, -W/2 + 0.75, 0.37, 0.9, new THREE.MeshStandardMaterial({ color: '#FFFFFF', roughness: 0.9 }));
+    box(1.22, 0.06, 1.3, -W/2 + 0.75, 0.48, 1.25, new THREE.MeshStandardMaterial({ color: '#2F4FE0', roughness: 0.9 }));
+    box(0.7, 0.12, 0.36, -W/2 + 0.75, 0.52, 0.05, new THREE.MeshStandardMaterial({ color: '#F1F2F4' }));
+    box(1.15, 0.05, 0.55, W/2 - 0.7, 0.74, -D/2 + 0.45, wood); box(0.05, 0.72, 0.5, W/2 - 1.22, 0.36, -D/2 + 0.45, wood); box(0.05, 0.72, 0.5, W/2 - 0.18, 0.36, -D/2 + 0.45, wood);
+    box(0.42, 0.06, 0.42, W/2 - 0.7, 0.45, -D/2 + 1.05, new THREE.MeshStandardMaterial({ color: '#3A3F48' })); box(0.42, 0.45, 0.05, W/2 - 0.7, 0.68, -D/2 + 1.25, new THREE.MeshStandardMaterial({ color: '#3A3F48' }));
+    box(0.5, 0.5, 0.4, -W/2 + 0.32, 0.25, -D/2 + 0.3, wood);
+    const rug = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.1), new THREE.MeshStandardMaterial({ color: '#E7E3DA', roughness: 1 })); rug.rotation.x = -Math.PI/2; rug.position.set(0.55, 0.004, 0.6); rug.receiveShadow = true; room.add(rug);
+    const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.1, 0.26, 16), new THREE.MeshStandardMaterial({ color: '#E9E4DA' })); pot.position.set(W/2 - 0.25, 0.13, D/2 - 0.3); pot.castShadow = true; room.add(pot);
+    const leaf = new THREE.Mesh(new THREE.IcosahedronGeometry(0.26, 1), new THREE.MeshStandardMaterial({ color: '#6E9B6A', flatShading: true })); leaf.position.set(W/2 - 0.25, 0.48, D/2 - 0.3); leaf.castShadow = true; room.add(leaf);
+    const size = () => { const w = cv.clientWidth, h = cv.clientHeight; if (!w) return; r2.setSize(w, h, false); const a = w/h, s = 3.3; cam.left = -s*a; cam.right = s*a; cam.top = s; cam.bottom = -s; cam.updateProjectionMatrix(); r2.render(sc, cam); };
+    new ResizeObserver(size).observe(cv); size();
+  }
+  function update(d, on, why, bearing) {
+    if (!r2) return;
+    room.rotation.y = -bearing*RAD; // 창 벽(로컬 북쪽)이 실제 창 방향을 본다
+    const a = (bearing + 135)*RAD; cam.position.set(Math.sin(a)*12, 10, -Math.cos(a)*12); cam.lookAt(0, 0.9, 0);
+    L.position.copy(d.clone().multiplyScalar(20)); L.target.position.set(0, 0, 0); L.intensity = on ? 3.2 : 0;
+    document.getElementById('planMsg').textContent = on ? '지금 창으로 들어온 햇빛이 바닥에 닿습니다' : `이 시각에는 방에 직사광이 없습니다 · ${why}`;
+    r2.render(sc, cam);
+  }
+  return { mount, update };
+})();
+
+// ---------- 매물 열기 ----------
+const tInput = document.getElementById('t');
+function openListing(lid) {
+  cur = lid; renderSide(lid); buildWorld(lid);
+  document.getElementById('topUrl').value = `https://www.peterpanz.com/house/${lid}`;
+  const { opts, mismatch, walls } = windowOptions(lid), box = document.getElementById('wallPick');
+  document.getElementById('wallNote').textContent = mismatch ? `광고는 ${LISTINGS[lid].dir}, 실제 외벽은 ${walls.map(w => compass(w.az)).join('·')}입니다. 외벽을 고르면 기준 밖 결과입니다.` : `광고 방향과 외벽 방향이 맞습니다.`;
+  box.innerHTML = opts.map((o, i) => `<button data-w="${i}" aria-pressed="${i === 0}">${o.label}</button>`).join('');
+  box.querySelectorAll('button').forEach(b => b.onclick = () => { box.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); placeWindow(opts[+b.dataset.w]); });
+  placeWindow(opts[0]);
+}
+document.getElementById('bSummer').onclick = () => { season = 'summer'; document.getElementById('bSummer').setAttribute('aria-pressed', 'true'); document.getElementById('bWinter').setAttribute('aria-pressed', 'false'); update(); };
+document.getElementById('bWinter').onclick = () => { season = 'winter'; document.getElementById('bWinter').setAttribute('aria-pressed', 'true'); document.getElementById('bSummer').setAttribute('aria-pressed', 'false'); update(); };
+tInput.oninput = update;
+document.getElementById('hReg').onclick = () => setHeightMode('reg');
+document.getElementById('hV11').onclick = () => setHeightMode('v11');
+let playing = null;
+document.getElementById('play').onclick = () => {
+  const btn = document.getElementById('play');
+  if (playing) { clearInterval(playing); playing = null; btn.innerHTML = '<svg viewBox="0 0 14 14"><path d="M3 1.5v11l9-5.5z" fill="currentColor"/></svg>'; return; }
+  btn.innerHTML = '<svg viewBox="0 0 14 14"><path d="M3 2h3v10H3zM8 2h3v10H8z" fill="currentColor"/></svg>';
+  playing = setInterval(() => { let v = +tInput.value + 4; if (v > 1230) v = 300; tInput.value = v; update(); }, 40);
+};
+
+let composer = null;
+if (matchMedia('(min-width: 901px)').matches) {
+  try {
+    const [{ EffectComposer }, { RenderPass }, { GTAOPass }, { OutputPass }] = await Promise.all([import('three/addons/postprocessing/EffectComposer.js'), import('three/addons/postprocessing/RenderPass.js'), import('three/addons/postprocessing/GTAOPass.js'), import('three/addons/postprocessing/OutputPass.js')]);
+    composer = new EffectComposer(renderer); composer.addPass(new RenderPass(scene, camera));
+    const ao = new GTAOPass(scene, camera, 1, 1); ao.updateGtaoMaterial({ radius: 5, distanceExponent: 1.5, thickness: 3, scale: 1.2 }); ao.blendIntensity = 0.85; composer.addPass(ao);
+    { const r0 = ao.render.bind(ao); ao.render = (...args) => { const hid = []; scene.traverse(o => { if (o.visible && (o.isSprite || (o.material && o.material.transparent))) { o.visible = false; hid.push(o); } }); r0(...args); hid.forEach(o => { o.visible = true; }); }; } composer.addPass(new OutputPass());
+  } catch (e) { console.warn('AO off', e); composer = null; }
+}
+function resize() { const w = canvas.clientWidth, h = canvas.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); composer?.setSize(w, h); camera.aspect = w/h; if (w > 900) camera.setViewOffset(w, h, w > 1180 ? -100 : -210, -60, w, h); else camera.clearViewOffset(); camera.updateProjectionMatrix(); }
+new ResizeObserver(resize).observe(canvas);
+(function loop() { controls.update(); composer ? composer.render() : renderer.render(scene, camera); requestAnimationFrame(loop); })();
+
+// ---------- 화면 전환 ----------
+const screens = ['idle', 'loading', 'report', 'unsupported', 'infra'];
+let timers = [];
+function show(s, lid) {
+  timers.forEach(clearTimeout); timers = [];
+  screens.forEach(k => document.getElementById('s-' + k).classList.toggle('hidden', k !== s));
+  document.getElementById('topForm').classList.toggle('hidden', s === 'idle' || s === 'loading');
+  document.querySelectorAll('.review [data-s]').forEach(b => b.setAttribute('aria-pressed', b.dataset.s === s && (!b.dataset.l || b.dataset.l === (lid || cur))));
+  if (s === 'report') { if (lid && lid !== cur) openListing(lid); requestAnimationFrame(() => { resize(); update(); }); }
+  if (s === 'loading') runLoading();
+}
+function runLoading() {
+  const lis = [...document.querySelectorAll('#steps li')], notes = ['피터팬 · 0.8초', '건축HUB 표제부 · 1.6초', '주변 건물 · 햇빛 2계절', ''];
+  lis.forEach(li => { li.className = 'wait'; li.querySelector('small').textContent = ''; });
+  lis.forEach((li, i) => { timers.push(setTimeout(() => { li.className = 'run'; }, i*900)); timers.push(setTimeout(() => { li.className = 'done'; li.querySelector('small').textContent = notes[i]; }, i*900 + 850)); });
+}
+function route(url) {
+  const m = url.trim().match(/^https:\/\/(www\.)?peterpanz\.com\/house\/(\d+)/);
+  if (!m) { document.getElementById('badUrl').textContent = url.trim() || '(빈 입력)'; return show('unsupported'); }
+  const lid = LISTINGS[m[2]] ? m[2] : null;
+  if (!lid) { document.getElementById('badUrl').textContent = `${url.trim()} (이 시안에는 시연 매물 2개만 있습니다)`; return show('unsupported'); }
+  document.getElementById('loadUrl').textContent = `peterpanz.com/house/${lid}`;
+  show('loading'); timers.push(setTimeout(() => show('report', lid), 3700));
+}
+document.getElementById('idleForm').onsubmit = e => { e.preventDefault(); route(document.getElementById('idleUrl').value); };
+document.getElementById('topForm').onsubmit = e => { e.preventDefault(); route(document.getElementById('topUrl').value); };
+document.querySelectorAll('.chip').forEach(c => c.onclick = () => { document.getElementById('idleUrl').value = c.dataset.url; route(c.dataset.url); });
+document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => show(b.dataset.go, cur));
+document.querySelectorAll('.review [data-s]').forEach(b => b.onclick = () => show(b.dataset.s, b.dataset.l || cur));
+
+const q = new URLSearchParams(location.search);
+if (hmode === 'v11') { document.getElementById('hReg').setAttribute('aria-pressed', 'false'); document.getElementById('hV11').setAttribute('aria-pressed', 'true'); }
+openListing(q.get('l') || '19929211');
+show(q.get('s') || 'report', cur);
+if (q.get('season') === 'summer') document.getElementById('bSummer').click();
+if (q.get('t')) { tInput.value = q.get('t'); update(); }
+if (q.get('wall')) document.querySelector(`#wallPick [data-w="${q.get('wall')}"]`)?.click();
+window.__ready = true;
+</script>
+</body>
+</html>
