@@ -204,6 +204,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 .live-note>div{max-width:520px;background:rgba(255,255,255,.92);border-radius:20px;padding:24px;box-shadow:0 12px 40px rgba(15,22,35,.12)}
 .live-note b{display:block;font-size:20px;margin-bottom:8px}.live-note span{color:#5B6475;font-size:15px}
 .stage.live .live-note{display:grid}.stage.live canvas,.stage.live .hud{display:none!important}
+.glance{margin-top:12px;background:#0F1623;color:#fff;border-radius:16px;padding:14px 16px}
+.glance .g-k{font-size:12px;font-weight:700;color:#9DB0FF;margin-bottom:8px}
+.glance .g-row{display:grid;grid-template-columns:auto 1fr auto 1fr auto 1fr;gap:4px 8px;align-items:baseline;font-size:13px;color:#C9D0DC}
+.glance .g-row b{font-size:22px;color:#fff}.glance .g-row b.d{color:#FFB547}.glance .g-row b.u{color:#AEB6C4}
+.glance .g-line{margin-top:8px;font-size:13.5px;color:#E6E9F0}
+.mk{display:inline-block;margin-left:6px;font-size:10.5px;font-weight:700;border-radius:5px;padding:2px 5px;vertical-align:1px}
+.mk.same{background:#E6F4EC;color:#157F4B}.mk.diff{background:#FFF1DE;color:#9A5B00}.mk.unk{background:#EEF0F3;color:#5F6878}.mk.only{background:#EEF2FF;color:#2F4FE0}
+.facts .r.diff{background:#FFF8EC;margin:0 -8px;padding-left:8px;padding-right:8px;border-radius:8px}
 </style>
 <script src="listings-geo.js"></script>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
@@ -554,6 +562,7 @@ function placeWindow(o) {
   }
   const wt = model.iv.winter.reduce((s, [a, b]) => s + b - a, 0);
   document.getElementById('sigWinter').textContent = wt ? dur(wt) : '없음';
+  { const L = LISTINGS[cur]; const g = document.getElementById('glanceBox'); if (g && L) g.innerHTML = glanceHTML(L.rows, '동지 창 햇빛 ' + (wt ? dur(wt) : '없음') + ' · 하지 ' + (model.iv.summer.reduce((a, [x, y]) => a + y - x, 0) ? dur(model.iv.summer.reduce((a, [x, y]) => a + y - x, 0)) : '없음') + (o.user ? ' (사용자 수정)' : ' (가정 모델)'), L.check.length); }
   const ivText = iv => iv.length ? iv.map(([a, b]) => `${hhmm(a)}–${hhmm(b)}`).join(', ') : '해가 들지 않음';
   document.getElementById('heroIv').innerHTML = `동지 <b class="num">${ivText(model.iv.winter)}</b> · 하지 <span class="num">${ivText(model.iv.summer)}</span>`;
   for (const [k, id] of [['summer', 'hbS'], ['winter', 'hbW']]) document.getElementById(id).innerHTML = model.iv[k].map(([a, b]) => `<span style="left:${a/14.4}%;width:${(b - a)/14.4}%"></span>`).join('');
@@ -608,6 +617,29 @@ function setHeightMode(m) {
   buildWorld(cur); camera.position.copy(cp); controls.target.copy(ct); controls.update();
   updateNotice(cur); placeWindow(win);
 }
+
+// 대조 행 분류: 공식 칸이 확인 불가·조회 실패면 unk, 핵심 값이 같으면 same, 다르면 diff
+const plain = (h) => String(h).replace(/<span class="src">.*?<\/span>/g, '').replace(/<[^>]+>/g, '').replace(/[\s"·]/g, '');
+const norm = (t) => t.replace(/제(\d)종/g, '제$1종').replace(/㎡|m²|m/g, '').replace(/\./g, '').replace(/층.*$/, '층');
+function classify(r) {
+  if (/확인 불가|조회 실패/.test(r[2])) return 'unk';
+  const a = plain(r[1]), o = plain(r[2]);
+  if (!a || /표기없음/.test(a)) return 'only';
+  if (r[0] === '층') { const at = a.match(/\/(\d+)층/), ot = o.match(/지상(\d+)층/); return at && ot && at[1] === ot[1] ? 'same' : 'diff'; }
+  return norm(a).slice(0, 8) === norm(o).slice(0, 8) || o.includes(a) || a.includes(o) ? 'same' : 'diff';
+}
+const MARK = { same: '<span class="mk same">같음</span>', diff: '<span class="mk diff">다름</span>', unk: '<span class="mk unk">확인 불가</span>', only: '<span class="mk only">대장만</span>' };
+function factsHTML(rows) {
+  return rows.map((r) => { const c = classify(r); return `<div class="r ${c}"><div>${r[0]}${MARK[c]}</div><div class="num">${r[1]}</div><div class="num">${r[2]}</div></div>`; }).join('');
+}
+function glanceHTML(rows, sunText, checks) {
+  const n = { same: 0, diff: 0, unk: 0, only: 0 }; rows.forEach((r) => n[classify(r)]++);
+  const diffs = rows.filter((r) => classify(r) === 'diff').map((r) => r[0]);
+  return `<div class="glance"><div class="g-k">한눈에 보기</div>
+    <div class="g-row"><b class="num">${n.same}</b><span>광고와 같음</span><b class="num ${n.diff ? 'd' : ''}">${n.diff}</b><span>다름${diffs.length ? ' (' + diffs.join('·') + ')' : ''}</span><b class="num u">${n.unk}</b><span>확인 불가</span></div>
+    ${sunText ? `<div class="g-line">☀ ${sunText}</div>` : ''}
+    <div class="g-line">✅ 가서 물어볼 것 ${checks}개 · 아래 체크리스트</div></div>`;
+}
 // ---------- 리포트 ----------
 function renderSide(lid) {
   const L = LISTINGS[lid], G = GEO[lid].model;
@@ -620,12 +652,13 @@ function renderSide(lid) {
       <div class="s" id="heroIv"></div>
       <div class="bars"><div class="bar">하지<div id="hbS"></div></div><div class="bar">동지<div id="hbW"></div></div></div>
     </div>
+    <div id="glanceBox"></div>
     <div class="tiles">
       <div class="tile ${L.tile1[2]}"><div class="k">${L.tile1[0]}</div><div class="v">${L.tile1[1]}</div></div>
       <div class="tile ${L.sig3[2]}"><div class="k">${L.sig3[0]}</div><div class="v">${L.sig3[1]}</div></div>
     </div>
     <div class="card"><h3><span class="idx">01</span>광고와 공식 기록</h3>
-      <div class="facts"><div class="hd"><div></div><div>매물 광고</div><div>건축물대장</div></div>${L.rows.map(r => `<div class="r"><div>${r[0]}</div><div class="num">${r[1]}</div><div class="num">${r[2]}</div></div>`).join('')}</div>
+      <div class="facts"><div class="hd"><div></div><div>매물 광고</div><div>건축물대장</div></div>${factsHTML(L.rows)}</div>
       <div class="foot">피터팬·건축HUB 표제부 2026-10-16 조회. 출처별 기록이며 적법·안전 여부를 판정하지 않습니다.</div></div>
     <div class="card"><h3><span class="idx">02</span>걸어서 닿는 곳 <span class="tag unk">언덕 확인 불가</span></h3>
       <div class="poi">${L.pois.map(([ic, name, d, c]) => `<div><span class="ic" style="background:${c}">${ic}</span>${name}<span class="d num">${d}m</span></div>`).join('')}</div>
@@ -828,12 +861,13 @@ function renderLive(ad, reg, url) {
   document.getElementById('side').innerHTML = `
     <div class="head"><div class="eyebrow">피터팬 <span class="mono">${esc(ad.id)}</span> · 실시간 조회</div><h2>${esc(title)}</h2>
       <div class="meta">${meta.map(m => '<span>' + esc(m) + '</span>').join('')}</div></div>
-    <div class="tiles" style="margin-top:18px">
+    ${glanceHTML(rows, '3D 햇빛 시간표는 시연 매물만 지원', check.length)}
+    <div class="tiles" style="margin-top:8px">
       <div class="tile unk"><div class="k">공식 전용면적</div><div class="v">확인 불가</div></div>
       <div class="tile ${/근린|업무/.test(use) ? 'warn' : ''}"><div class="k">건축물 용도</div><div class="v">${esc(use || '확인 불가')}</div></div>
     </div>
     <div class="card"><h3><span class="idx">01</span>광고와 공식 기록</h3>
-      <div class="facts"><div class="hd"><div></div><div>매물 광고</div><div>건축물대장</div></div>${rows.map(r => `<div class="r"><div>${r[0]}</div><div class="num">${r[1]}</div><div class="num">${r[2]}</div></div>`).join('')}</div>
+      <div class="facts"><div class="hd"><div></div><div>매물 광고</div><div>건축물대장</div></div>${factsHTML(rows)}</div>
       <div class="foot">피터팬 ${esc((ad.retrieved_at || '').slice(0, 16).replace('T', ' '))} UTC 조회 · 건축HUB 표제부 ${R ? esc((reg.retrieved_at || '').slice(0, 16).replace('T', ' ')) + ' UTC 조회' : esc(reg.state)}. 출처별 기록이며 적법·안전 여부를 판정하지 않습니다.</div></div>
     <div class="card"><h3><span class="idx">02</span>방문해서 확인할 것</h3><ul class="check">${check.map(([a, b]) => `<li><i></i><div>${esc(a)}<small>${esc(b)}</small></div></li>`).join('')}</ul></div>
     <div class="foot">Prelook은 매물 추천이나 법적 판정을 하지 않습니다. 숫자는 공개 페이지·공공데이터에서 가져온 그대로입니다.</div>`;
