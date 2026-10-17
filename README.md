@@ -2,6 +2,10 @@
 
 Vibe Coders Jam Session: feat. Base44 + Hongik University (2026-10-17) **1등 수상작**. 피터팬 매물 링크 하나로 집보기 전 리포트를 보여 준다.
 
+![Prelook 대표 이미지](docs/images/cover.jpg)
+
+![Prelook 리포트 화면: 남향 2층의 동지 창 햇빛 없음, 광고와 건축물대장 대조, 주변 건물 3D](public/hero-report.jpg)
+
 - 행사: https://luma.com/base44hongdae
 - 참가자: **118명**. 행사 종료 시 공식 Luma 참석자 표시와 참가자의 최종 확인을 기준으로 기록했다. 별도 현장 체크인 집계 자료는 확보하지 않았다.
 - 결과: 대표 프로젝트로 선정되어 최종 발표 후 1등. 참가자 확인에 따른 기록이며 세부 상명·득표수·공식 결과 페이지는 확인하지 않았다.
